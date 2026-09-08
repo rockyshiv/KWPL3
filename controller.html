@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#04070F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>KWPL 3 — Overlay Controller</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#04070F; --panel:#0C1526; --panel2:#111C33; --line:#1E2C48;
+  --ink:#F2F6FF; --dim:#8FA3C4;
+  --or:#FF6A13; --am:#FFB020; --rd:#E01B24; --gn:#12B76A; --cy:#31C7F5; --pu:#7A5CFF;
+}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--ink);
+  font:16px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  padding:0 0 env(safe-area-inset-bottom);overscroll-behavior:none;
+}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:20;background:rgba(4,7,15,.96);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px;
+}
+.hrow{display:flex;align-items:center;gap:10px}
+.brand{font-weight:800;letter-spacing:.06em;font-size:15px;
+  background:linear-gradient(100deg,var(--or),var(--am));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim);
+  background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+.dot{width:9px;height:9px;border-radius:50%;background:#5A6B88;flex:none;transition:background .3s}
+.dot.ok{background:var(--gn);box-shadow:0 0 10px var(--gn)}
+.dot.warn{background:var(--am)}
+
+/* ---------- tabs ---------- */
+nav{display:flex;gap:6px;overflow-x:auto;margin-top:10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+nav::-webkit-scrollbar{display:none}
+nav button{
+  flex:none;background:var(--panel);color:var(--dim);border:1px solid var(--line);
+  border-radius:10px;padding:9px 13px;font-size:13px;font-weight:700;letter-spacing:.02em;
+  white-space:nowrap;cursor:pointer;transition:.15s
+}
+nav button.sel{background:linear-gradient(100deg,var(--or),var(--am));color:#08111f;border-color:transparent}
+
+/* ---------- layout ---------- */
+main{padding:14px 14px 40px;max-width:900px;margin:0 auto}
+.pane{display:none}.pane.sel{display:block}
+h3{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:20px 0 9px;font-weight:800}
+h3:first-child{margin-top:2px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.grid.two{grid-template-columns:1fr 1fr}
+
+/* ---------- buttons ---------- */
+.b{
+  position:relative;border:1px solid var(--line);background:var(--panel);
+  color:var(--ink);border-radius:13px;padding:16px 12px;font-size:15px;font-weight:800;
+  letter-spacing:.05em;text-transform:uppercase;cursor:pointer;text-align:center;
+  transition:transform .08s,filter .15s;min-height:60px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+}
+.b small{font-size:10.5px;font-weight:600;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.b:active{transform:scale(.955);filter:brightness(1.25)}
+.b.big{font-size:20px;min-height:82px}
+.b.or{background:linear-gradient(140deg,#FF6A13,#FF9A2E);color:#0a0f1c;border-color:transparent}
+.b.or small{color:rgba(10,15,28,.72)}
+.b.rd{background:linear-gradient(140deg,#E01B24,#FF6A13);color:#fff;border-color:transparent}
+.b.rd small{color:rgba(255,255,255,.8)}
+.b.gn{background:linear-gradient(140deg,#0E9C5B,#12B76A);color:#fff;border-color:transparent}
+.b.gn small{color:rgba(255,255,255,.8)}
+.b.am{background:linear-gradient(140deg,#E8A00F,#FFC85A);color:#0a0f1c;border-color:transparent}
+.b.am small{color:rgba(10,15,28,.7)}
+.b.cy{background:linear-gradient(140deg,#1B9FD0,#4FD4FA);color:#04121a;border-color:transparent}
+.b.cy small{color:rgba(4,18,26,.7)}
+.b.pu{background:linear-gradient(140deg,#6444E8,#9B87FF);color:#fff;border-color:transparent}
+.b.pu small{color:rgba(255,255,255,.8)}
+.b.gh{background:var(--panel2)}
+.b.off{background:#16101A;border-color:#3A2030;color:#FF9AA2}
+
+/* toggle state */
+.b.tg{justify-content:center}
+.b.tg.on{background:linear-gradient(140deg,#0E9C5B,#12B76A);color:#fff;border-color:transparent}
+.b.tg.on small{color:rgba(255,255,255,.85)}
+.b.tg .st{font-size:10.5px;letter-spacing:.14em;color:var(--dim)}
+.b.tg.on .st{color:rgba(255,255,255,.9)}
+
+/* ---------- fields ---------- */
+.f{margin-bottom:10px}
+.f label{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:5px;font-weight:800}
+input,select,textarea{
+  width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);
+  border-radius:11px;padding:13px 13px;font-size:16px;font-family:inherit;outline:none
+}
+input:focus,select,textarea:focus{border-color:var(--or)}
+textarea{min-height:120px;resize:vertical;line-height:1.5}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+@media(max-width:600px){.row2,.row3{grid-template-columns:1fr}}
+
+/* team picker */
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tb{border:2px solid var(--line);background:var(--panel);border-radius:12px;padding:12px 10px;
+  font-size:13.5px;font-weight:800;letter-spacing:.04em;color:var(--dim);cursor:pointer;text-align:center;
+  display:flex;align-items:center;justify-content:center;gap:8px;text-transform:uppercase}
+.tb i{width:12px;height:12px;border-radius:3px;flex:none;display:block}
+.tb.sel{color:#fff;background:var(--panel2)}
+
+.note{font-size:12.5px;color:var(--dim);line-height:1.6;background:var(--panel);
+  border:1px solid var(--line);border-left:3px solid var(--or);border-radius:10px;padding:11px 13px;margin:12px 0}
+.note b{color:var(--ink)}
+code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;
+  word-break:break-all;display:inline-block}
+
+/* panic bar */
+.panic{position:sticky;bottom:0;z-index:20;margin:20px -14px -40px;padding:12px 14px calc(14px + env(safe-area-inset-bottom));
+  background:rgba(4,7,15,.97);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  display:flex;gap:9px}
+.panic .b{flex:1;min-height:52px;font-size:14px;padding:12px}
+
+#flash{position:fixed;left:50%;bottom:96px;transform:translate(-50%,20px);z-index:60;
+  background:rgba(18,183,106,.95);color:#022; font-weight:800;font-size:13px;letter-spacing:.08em;
+  padding:9px 18px;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;text-transform:uppercase}
+#flash.show{opacity:1;transform:translate(-50%,0)}
+#flash.bad{background:rgba(224,27,36,.95);color:#fff}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hrow">
+    <div class="brand">KWPL 3 · OVERLAY CONTROL</div>
+    <div class="stat"><span class="dot" id="dot"></span><span id="statTx">connecting…</span></div>
+  </div>
+  <nav id="tabs">
+    <button data-p="live" class="sel">Live</button>
+    <button data-p="breaks">Breaks</button>
+    <button data-p="teams">Teams</button>
+    <button data-p="players">Players</button>
+    <button data-p="furniture">On-screen</button>
+    <button data-p="setup">Setup</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ================= LIVE ================= -->
+<section class="pane sel" id="p-live">
+  <h3>Boundaries</h3>
+  <div class="grid two">
+    <button class="b big or" data-fire='{"a":"burst","k":"four"}'>FOUR<small>Boundary</small></button>
+    <button class="b big rd" data-fire='{"a":"burst","k":"six"}'>SIX<small>Maximum</small></button>
+  </div>
+
+  <h3>Wickets</h3>
+  <div class="grid">
+    <button class="b rd" data-fire='{"a":"burst","k":"wicket"}'>OUT!<small>Wicket</small></button>
+    <button class="b rd" data-fire='{"a":"burst","k":"bowled"}'>Bowled<small>Timber</small></button>
+    <button class="b rd" data-fire='{"a":"burst","k":"runout"}'>Run out<small>Direct hit</small></button>
+    <button class="b cy" data-fire='{"a":"burst","k":"caught"}'>Catch<small>What a catch</small></button>
+    <button class="b gh" data-fire='{"a":"burst","k":"dropped"}'>Dropped<small>Chance missed</small></button>
+    <button class="b am" data-fire='{"a":"burst","k":"appeal"}'>Howzat!<small>Big appeal</small></button>
+  </div>
+
+  <h3>Duck out</h3>
+  <div class="grid two">
+    <button class="b am big" data-fire='{"a":"burst","k":"duck"}'>Duck<small>Out for nought</small></button>
+    <button class="b am big" data-fire='{"a":"burst","k":"goldenduck"}'>Golden duck<small>Out first ball</small></button>
+  </div>
+  <div class="note">The duck waddles off with his bat for about six seconds. Set the player name below first and it appears on the graphic.</div>
+
+  <h3>Decision review</h3>
+  <div class="grid">
+    <button class="b rd" data-fire='{"a":"drs","d":{"verdict":"out"}}'>DRS · Out</button>
+    <button class="b gn" data-fire='{"a":"drs","d":{"verdict":"notout"}}'>DRS · Not out</button>
+    <button class="b am" data-fire='{"a":"drs","d":{"verdict":"umpire"}}'>Umpire's call</button>
+    <button class="b gn" data-fire='{"a":"burst","k":"notout"}'>NOT OUT<small>Big graphic</small></button>
+  </div>
+
+  <h3>Milestones &amp; moments</h3>
+  <div class="grid">
+    <button class="b or" data-fire='{"a":"burst","k":"fifty"}'>Fifty<small>50 runs</small></button>
+    <button class="b am" data-fire='{"a":"burst","k":"century"}'>Century<small>100 runs</small></button>
+    <button class="b rd" data-fire='{"a":"burst","k":"hattrick"}'>Hat-trick<small>3 in 3</small></button>
+    <button class="b cy" data-fire='{"a":"burst","k":"maiden"}'>Maiden over<small>No runs</small></button>
+    <button class="b pu" data-fire='{"a":"burst","k":"powerplay"}'>Powerplay<small>Restrictions</small></button>
+    <button class="b or" data-fire='{"a":"burst","k":"lastover"}'>Last over<small>Final 6 balls</small></button>
+    <button class="b rd" data-fire='{"a":"burst","k":"superover"}'>Super over<small>Eliminator</small></button>
+    <button class="b gn" data-fire='{"a":"burst","k":"freehit"}'>Free hit<small>No ball</small></button>
+  </div>
+
+  <div class="note">
+    <b>Tag the player.</b> Fill these in and every graphic above shows the name and team strip until you clear them.
+  </div>
+  <div class="row2">
+    <div class="f"><label>Player name</label><input id="livePlayer" placeholder="e.g. Ravi Kumar" autocomplete="off"></div>
+    <div class="f"><label>Team</label>
+      <select id="liveTeam">
+        <option value="">— none —</option>
+        <option value="BEL">Belagavi Bulls</option>
+        <option value="BEN">Bengaluru Renegades</option>
+        <option value="BJP">Bijapur Blasters</option>
+        <option value="TUM">Tumkur Tigers</option>
+      </select>
+    </div>
+  </div>
+  <button class="b gh" onclick="document.getElementById('livePlayer').value='';document.getElementById('liveTeam').value='';flash('Player tag cleared')">Clear player tag</button>
+</section>
+
+<!-- ================= BREAKS ================= -->
+<section class="pane" id="p-breaks">
+  <div class="note">Break screens stay up until you press <b>Take break off</b>. Set minutes to show a countdown.</div>
+  <div class="f"><label>Countdown minutes (0 = no clock)</label>
+    <input id="brkMins" type="number" inputmode="decimal" value="5" min="0" step="1"></div>
+
+  <h3>Break screens</h3>
+  <div class="grid">
+    <button class="b am" data-card="starting">Starting shortly</button>
+    <button class="b cy" data-card="toss">The toss</button>
+    <button class="b or" data-card="drinks">Drinks break</button>
+    <button class="b or" data-card="innings">Innings break</button>
+    <button class="b pu" data-card="timeout">Strategic timeout</button>
+    <button class="b cy" data-card="rain">Rain delay</button>
+    <button class="b gh" data-card="tech">Technical break</button>
+    <button class="b am" data-card="thanks">Thank you / end</button>
+  </div>
+
+  <h3>Custom break screen</h3>
+  <div class="f"><label>Big title</label><input id="ckTitle" placeholder="e.g. LUNCH BREAK"></div>
+  <div class="f"><label>Sub line</label><input id="ckSub" placeholder="e.g. BACK IN 20 MINUTES"></div>
+  <div class="f"><label>Small note (optional)</label><input id="ckNote" placeholder="e.g. NEXT: BENGALURU vs BIJAPUR"></div>
+  <button class="b or" id="ckGo">Show custom screen</button>
+
+  <div style="height:14px"></div>
+  <button class="b off" data-fire='{"a":"cardOff"}'>Take break off</button>
+</section>
+
+<!-- ================= TEAMS ================= -->
+<section class="pane" id="p-teams">
+  <h3>Match up</h3>
+  <div class="row2">
+    <div>
+      <div class="f"><label>Team A (left)</label></div>
+      <div class="teams" id="pickA"></div>
+    </div>
+    <div>
+      <div class="f"><label>Team B (right)</label></div>
+      <div class="teams" id="pickB"></div>
+    </div>
+  </div>
+  <div class="f" style="margin-top:12px"><label>Strap line</label><input id="vsStrapIn" value="KWPL SEASON 3 · MATCH 1"></div>
+  <div class="f"><label>Venue line</label><input id="vsVenueIn" value="VET GROUND, JP NAGAR · BENGALURU"></div>
+  <div class="grid two">
+    <button class="b or big" id="vsGo">Show VS screen</button>
+    <button class="b off" data-fire='{"a":"vsOff"}'>Take VS off</button>
+  </div>
+
+  <h3>Playing XI</h3>
+  <div class="f"><label>Team</label>
+    <select id="xiTeamSel">
+      <option value="BEL">Belagavi Bulls</option>
+      <option value="BEN">Bengaluru Renegades</option>
+      <option value="BJP">Bijapur Blasters</option>
+      <option value="TUM">Tumkur Tigers</option>
+    </select></div>
+  <div class="f"><label>Heading</label><input id="xiTitleIn" value="PLAYING XI"></div>
+  <div class="f"><label>Players — one per line</label>
+    <textarea id="xiList" placeholder="Manjunath B (C)&#10;Rakesh S&#10;Vinay Kumar&#10;…"></textarea></div>
+  <div class="grid two">
+    <button class="b or" id="xiGo">Show squad</button>
+    <button class="b off" data-fire='{"a":"xiOff"}'>Take off</button>
+  </div>
+</section>
+
+<!-- ================= PLAYERS ================= -->
+<section class="pane" id="p-players">
+  <h3>Lower third</h3>
+  <div class="f"><label>Name</label><input id="l3n" placeholder="e.g. Ravi Kumar"></div>
+  <div class="f"><label>Role / description</label><input id="l3r" placeholder="e.g. TOP ORDER BATTER"></div>
+  <div class="row2">
+    <div class="f"><label>Team</label>
+      <select id="l3t">
+        <option value="">— none —</option>
+        <option value="BEL">Belagavi Bulls</option>
+        <option value="BEN">Bengaluru Renegades</option>
+        <option value="BJP">Bijapur Blasters</option>
+        <option value="TUM">Tumkur Tigers</option>
+      </select></div>
+    <div class="f"><label>Hold seconds (0 = stay up)</label><input id="l3h" type="number" inputmode="decimal" value="9" min="0"></div>
+  </div>
+  <div class="grid two">
+    <button class="b or big" id="l3Go">Show lower third</button>
+    <button class="b off" data-fire='{"a":"l3Off"}'>Take off</button>
+  </div>
+
+  <h3>Man of the match</h3>
+  <div class="f"><label>Award title</label><input id="mmT" value="MAN OF THE MATCH"></div>
+  <div class="f"><label>Name</label><input id="mmN" placeholder="e.g. Ravi Kumar"></div>
+  <div class="f"><label>Team</label>
+    <select id="mmTeam">
+      <option value="">— none —</option>
+      <option value="BEL">Belagavi Bulls</option>
+      <option value="BEN">Bengaluru Renegades</option>
+      <option value="BJP">Bijapur Blasters</option>
+      <option value="TUM">Tumkur Tigers</option>
+    </select></div>
+  <div class="f"><label>Stats — separate with |</label><input id="mmS" placeholder="68 (32) | 4 SIXES | 2 CATCHES"></div>
+  <div class="grid two">
+    <button class="b am big" id="mmGo">Show award</button>
+    <button class="b off" data-fire='{"a":"motmOff"}'>Take off</button>
+  </div>
+</section>
+
+<!-- ================= FURNITURE ================= -->
+<section class="pane" id="p-furniture">
+  <div class="note">These stay on screen until you switch them off. Tap to toggle.</div>
+
+  <h3>Always-on layers</h3>
+  <div class="grid two">
+    <button class="b tg" id="tgBug">Corner logos<span class="st" >OFF</span></button>
+    <button class="b tg" id="tgTitle">Match title bar<span class="st">OFF</span></button>
+    <button class="b tg" id="tgSponsor">Partner bar<span class="st">OFF</span></button>
+    <button class="b tg" id="tgTicker">News ticker<span class="st">OFF</span></button>
+    <button class="b tg" id="tgSocial">Social handle<span class="st">OFF</span></button>
+  </div>
+
+  <h3>Corner logos</h3>
+  <div class="f"><label>Add a team crest (optional)</label>
+    <select id="bugTeam">
+      <option value="">KWPL + Auraclusive only</option>
+      <option value="BEL">+ Belagavi Bulls</option>
+      <option value="BEN">+ Bengaluru Renegades</option>
+      <option value="BJP">+ Bijapur Blasters</option>
+      <option value="TUM">+ Tumkur Tigers</option>
+    </select></div>
+
+  <h3>Match title bar</h3>
+  <div class="row2">
+    <div class="f"><label>Left chip</label><input id="tbA" value="KWPL 3"></div>
+    <div class="f"><label>Right chip</label><input id="tbC" value="MATCH 1"></div>
+  </div>
+  <div class="f"><label>Centre text</label><input id="tbB" placeholder="BELAGAVI vs TUMKUR"></div>
+
+  <h3>News ticker</h3>
+  <div class="f"><label>Tag</label><input id="tkTag" value="KWPL 3"></div>
+  <div class="f"><label>Items — separate with |  ·  use Label: value for bold labels</label>
+    <textarea id="tkText" placeholder="BELAGAVI BULLS: 168/6 (20) | TUMKUR TIGERS: 142/9 (20) | NEXT: Bengaluru vs Bijapur, 2:00 PM"></textarea></div>
+
+  <h3>Social handle</h3>
+  <div class="f"><label>Handle</label><input id="socTx" value="@divyaangmyithri"></div>
+</section>
+
+<!-- ================= SETUP ================= -->
+<section class="pane" id="p-setup">
+  <div class="note">
+    <b>How this works.</b> The controller and the overlay talk to each other through a shared
+    <b>room code</b>. Both links must use the same code. Keep it private — anyone with the code
+    can drive your overlay.
+  </div>
+  <div class="f"><label>Room code</label><input id="roomIn" placeholder="kwpl3"></div>
+  <button class="b or" id="roomGo">Apply room code &amp; reload</button>
+
+  <h3>Your overlay link for YoloBox</h3>
+  <div class="note" style="border-left-color:var(--am)">
+    Put this in YoloBox Extreme → <b>Overlay → Web URL</b>, sized to <b>1920 × 1080</b>:<br><br>
+    <code id="dispUrl">—</code>
+  </div>
+  <button class="b gh" id="copyUrl">Copy overlay link</button>
+  <div style="height:9px"></div>
+  <button class="b gh" id="openDisp">Open overlay in a new tab (to test)</button>
+
+  <h3>Connection</h3>
+  <div class="note" id="connNote">Checking…</div>
+  <button class="b gh" id="pingBtn">Send test graphic</button>
+
+  <h3>Quick reference</h3>
+  <div class="note">
+    <b>Add to your phone's home screen</b> so it opens like an app: Chrome → ⋮ → Add to Home screen.<br><br>
+    <b>Scoring</b> stays in CricHeroes — this overlay deliberately has no score graphic, so the two never fight.<br><br>
+    <b>If a graphic sticks</b> on screen, hit <b>Clear screen</b> at the bottom.
+  </div>
+</section>
+
+<div class="panic">
+  <button class="b off" data-fire='{"a":"clear"}'>Clear screen</button>
+  <button class="b off" data-fire='{"a":"clearAll"}'>Clear everything</button>
+</div>
+
+</main>
+<div id="flash"></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+
+/* ---------------- room + links ---------------- */
+var params=new URLSearchParams(location.search);
+var ROOM=(params.get('room')||localStorage.getItem('kwpl_room')||'kwpl3')
+          .replace(/[^A-Za-z0-9_-]/g,'').slice(0,24)||'kwpl3';
+try{localStorage.setItem('kwpl_room',ROOM)}catch(e){}
+var TOPIC='kwpl3/'+ROOM+'/v1';
+$('roomIn').value=ROOM;
+
+var IS_FILE = location.protocol === 'file:';
+var dispURL=location.href.replace(/[^\/]*$/,'').replace(/controller\.html.*$/,'')+'display.html?room='+encodeURIComponent(ROOM);
+$('dispUrl').textContent = IS_FILE
+  ? 'Not available yet — this controller is running from a file on your phone, not from a web address. Put both files online first (see the setup guide), then reopen this page from that web address and the link will appear here.'
+  : dispURL;
+if(IS_FILE){
+  var w=document.createElement('div');
+  w.className='note'; w.style.borderLeftColor='#FFB020';
+  w.innerHTML='<b>You are running this from a file, not a web address.</b><br>'+
+    'The buttons still work, but YoloBox cannot load an overlay from a file — it needs an '+
+    '<b>https://</b> address. Until the files are online, you can test everything by opening '+
+    '<b>display.html</b> on your laptop with the same room code.';
+  var setup=$('p-setup'); setup.insertBefore(w, setup.firstChild);
+}
+$('openDisp').onclick=function(){window.open(dispURL,'_blank')};
+$('copyUrl').onclick=function(){
+  var ok=function(){flash('Link copied')};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(dispURL).then(ok,fallback)}
+  else fallback();
+  function fallback(){
+    var t=document.createElement('textarea');t.value=dispURL;document.body.appendChild(t);
+    t.select();try{document.execCommand('copy');ok()}catch(e){flash('Copy failed — long-press the link',1)}
+    document.body.removeChild(t);
+  }
+};
+$('roomGo').onclick=function(){
+  var v=($('roomIn').value||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,24);
+  if(!v){flash('Enter a room code',1);return}
+  try{localStorage.setItem('kwpl_room',v)}catch(e){}
+  location.search='?room='+encodeURIComponent(v);
+};
+
+/* ---------------- transport: MQTT 3.1.1 over WebSocket ---------------- */
+var BROKERS=[
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
+  'wss://test.mosquitto.org:8081/mqtt'
+];
+var enc=new TextEncoder(), dec=new TextDecoder();
+function mqttStr(s){var b=enc.encode(s);var o=[b.length>>8&255,b.length&255];for(var i=0;i<b.length;i++)o.push(b[i]);return o}
+function varLen(n){var o=[];do{var b=n%128;n=Math.floor(n/128);if(n>0)b|=128;o.push(b)}while(n>0);return o}
+function pkt(h,body){return new Uint8Array([h].concat(varLen(body.length),body))}
+
+var ws=null,bi=0,alive=false,ping=null,buf=new Uint8Array(0),pid=1,retry=0,brokerName='';
+function connect(){
+  var url=BROKERS[bi%BROKERS.length];
+  brokerName=url.split('//')[1].split(':')[0];
+  try{ws=new WebSocket(url,'mqtt')}catch(e){return next()}
+  ws.binaryType='arraybuffer';
+  var to=setTimeout(function(){if(!alive){try{ws.close()}catch(e){}}},7000);
+  ws.onopen=function(){
+    var cid='kwplc_'+Math.random().toString(16).slice(2,10);
+    ws.send(pkt(0x10, mqttStr('MQTT').concat([4,0x02,0,60]).concat(mqttStr(cid))));
+  };
+  ws.onmessage=function(ev){
+    var u=new Uint8Array(ev.data),m=new Uint8Array(buf.length+u.length);
+    m.set(buf);m.set(u,buf.length);buf=m;parse();
+  };
+  ws.onclose=function(){clearTimeout(to);alive=false;clearInterval(ping);setStat();next()};
+  ws.onerror=function(){try{ws.close()}catch(e){}};
+  function next(){bi++;retry=Math.min(retry+1,6);setTimeout(connect,800+retry*700)}
+  function parse(){
+    while(buf.length>=2){
+      var ml=0,mult=1,i=1,b;
+      do{if(i>=buf.length)return;b=buf[i++];ml+=(b&127)*mult;mult*=128}while(b&128);
+      if(buf.length<i+ml)return;
+      var type=buf[0]>>4, body=buf.subarray(i,i+ml); buf=buf.slice(i+ml);
+      if(type===2){
+        clearTimeout(to);alive=true;retry=0;setStat();
+        var id=pid++&0xffff;
+        ws.send(pkt(0x82,[id>>8&255,id&255].concat(mqttStr(TOPIC),[0])));
+        clearInterval(ping);
+        ping=setInterval(function(){try{ws.send(new Uint8Array([0xC0,0x00]))}catch(e){}},28000);
+      } else if(type===3){
+        var tl=(body[0]<<8)|body[1];
+        try{
+          var m=JSON.parse(dec.decode(body.subarray(2+tl)));
+          if(m&&m.a==='hb'&&m.from==='display'){lastHB=Date.now();setStat()}
+          if(m&&m.a==='hello'&&m.from==='display'){lastHB=Date.now();setStat();restoreLayers()}
+        }catch(e){}
+      }
+    }
+  }
+}
+connect();
+
+function rawSend(obj){
+  var sent=false;
+  if(alive&&ws&&ws.readyState===1){
+    var t=mqttStr(TOPIC),p=enc.encode(JSON.stringify(obj)),body=t.slice();
+    for(var i=0;i<p.length;i++)body.push(p[i]);
+    try{ws.send(pkt(0x30,body));sent=true}catch(e){}
+  }
+  try{if(bc)bc.postMessage(obj)}catch(e){}
+  try{localStorage.setItem('kwpl3-'+ROOM,JSON.stringify({m:obj,t:Date.now()}))}catch(e){}
+  return sent;
+}
+var bc=null; try{bc=new BroadcastChannel('kwpl3-'+ROOM)}catch(e){}
+
+/* ---------------- status ---------------- */
+var lastHB=0;
+function setStat(){
+  var d=$('dot'),t=$('statTx'),n=$('connNote');
+  var online=Date.now()-lastHB<9000;
+  if(alive&&online){d.className='dot ok';t.textContent='display live'}
+  else if(alive){d.className='dot warn';t.textContent='no display yet'}
+  else{d.className='dot';t.textContent='connecting…'}
+  if(n) n.innerHTML = alive
+    ? ('Relay connected via <b>'+brokerName+'</b> — your phone is fine.<br>'+
+       'Overlay display: <b>'+(online
+          ? 'online ✓'
+          : 'NOT RUNNING. Open display.html — on the YoloBox, or on a laptop to test — using room code <b>'+ROOM+'</b>.')+
+       '</b><br>Room code: <b>'+ROOM+'</b>')
+    : ('<b>Connecting to the relay…</b><br>If this does not clear, the phone has no internet, or this network blocks the relay. Try mobile data instead of wifi.<br>Room code: <b>'+ROOM+'</b>');
+}
+setInterval(setStat,2000); setStat();
+
+/* ---------------- flash toast ---------------- */
+var ft=null;
+function flash(msg,bad){
+  var f=$('flash');f.textContent=msg;f.className='show'+(bad?' bad':'');
+  clearTimeout(ft);ft=setTimeout(function(){f.className=bad?'bad':''},1300);
+}
+window.flash=flash;
+
+function send(obj,label){
+  var ok=rawSend(obj);
+  flash(ok?(label||'sent'):'offline — retrying', !ok);
+  if(navigator.vibrate) try{navigator.vibrate(ok?18:[25,40,25])}catch(e){}
+}
+
+/* ---------------- tabs ---------------- */
+var tabs=$('tabs').querySelectorAll('button');
+Array.prototype.forEach.call(tabs,function(b){
+  b.onclick=function(){
+    Array.prototype.forEach.call(tabs,function(x){x.classList.remove('sel')});
+    b.classList.add('sel');
+    document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('sel')});
+    $('p-'+b.dataset.p).classList.add('sel');
+    window.scrollTo(0,0);
+  };
+});
+
+/* ---------------- generic data-fire buttons ---------------- */
+document.querySelectorAll('[data-fire]').forEach(function(b){
+  b.onclick=function(){
+    var m=JSON.parse(b.dataset.fire);
+    if(m.a==='burst'){
+      var pl=$('livePlayer').value.trim(), tm=$('liveTeam').value;
+      m.d=m.d||{}; if(pl)m.d.player=pl; if(tm)m.d.team=tm;
+    }
+    send(m, b.textContent.split(/\s{2,}/)[0]);
+  };
+});
+
+/* ---------------- break cards ---------------- */
+document.querySelectorAll('[data-card]').forEach(function(b){
+  b.onclick=function(){
+    send({a:'card',k:b.dataset.card,d:{mins:parseFloat($('brkMins').value||0)}}, b.textContent);
+  };
+});
+$('ckGo').onclick=function(){
+  send({a:'card',k:'custom',d:{
+    title:$('ckTitle').value||'KWPL SEASON 3',
+    sub:$('ckSub').value||'',
+    note:$('ckNote').value||'',
+    mins:parseFloat($('brkMins').value||0)
+  }},'Custom screen');
+};
+
+/* ---------------- teams ---------------- */
+var TEAMS=[
+  ['BEL','Belagavi Bulls','#C9962F'],
+  ['BEN','Bengaluru Renegades','#C2302A'],
+  ['BJP','Bijapur Blasters','#5C6E90'],
+  ['TUM','Tumkur Tigers','#2E90E0']
+];
+var selA='BEL', selB='TUM';
+function buildPick(box,get,set){
+  box.innerHTML='';
+  TEAMS.forEach(function(t){
+    var d=document.createElement('div');
+    d.className='tb'+(get()===t[0]?' sel':'');
+    d.innerHTML='<i style="background:'+t[2]+'"></i>'+t[1].split(' ')[0];
+    d.onclick=function(){set(t[0]);buildPick(box,get,set)};
+    box.appendChild(d);
+  });
+}
+buildPick($('pickA'),function(){return selA},function(v){selA=v;autoTitle()});
+buildPick($('pickB'),function(){return selB},function(v){selB=v;autoTitle()});
+function nameOf(k){for(var i=0;i<TEAMS.length;i++)if(TEAMS[i][0]===k)return TEAMS[i][1];return k}
+function shortOf(k){return nameOf(k).split(' ')[0].toUpperCase()}
+function autoTitle(){ $('tbB').value = shortOf(selA)+'  vs  '+shortOf(selB) }
+autoTitle();
+
+$('vsGo').onclick=function(){
+  send({a:'vs',d:{a:selA,b:selB,strap:$('vsStrapIn').value,venue:$('vsVenueIn').value}},'VS screen');
+};
+$('xiGo').onclick=function(){
+  var list=$('xiList').value.trim();
+  if(!list){flash('Add some player names first',1);return}
+  send({a:'xi',d:{team:$('xiTeamSel').value,title:$('xiTitleIn').value,list:list}},'Squad');
+};
+
+/* ---------------- players ---------------- */
+$('l3Go').onclick=function(){
+  var n=$('l3n').value.trim();
+  if(!n){flash('Enter a name first',1);return}
+  send({a:'l3',d:{name:n,role:$('l3r').value,team:$('l3t').value,hold:$('l3h').value}},'Lower third');
+};
+$('mmGo').onclick=function(){
+  var n=$('mmN').value.trim();
+  if(!n){flash('Enter a name first',1);return}
+  send({a:'motm',d:{title:$('mmT').value,name:n,team:$('mmTeam').value,stats:$('mmS').value}},'Award');
+};
+
+/* ---------------- persistent layers ---------------- */
+function toggle(btnId,build){
+  var b=$(btnId), on=false;
+  b.onclick=function(){
+    on=!on;
+    b.classList.toggle('on',on);
+    b.querySelector('.st').textContent=on?'ON':'OFF';
+    send(build(on), b.firstChild.textContent.trim()+(on?' on':' off'));
+  };
+  return {set:function(v){on=v}};
+}
+toggle('tgBug',     function(on){return {a:'bug',      d:{on:on?1:0, team:$('bugTeam').value}}});
+toggle('tgTitle',   function(on){return {a:'titlebar', d:{on:on?1:0, a:$('tbA').value, b:$('tbB').value, c:$('tbC').value}}});
+toggle('tgSponsor', function(on){return {a:'sponsor',  d:{on:on?1:0}}});
+toggle('tgTicker',  function(on){return {a:'ticker',   d:{on:on?1:0, tag:$('tkTag').value, text:$('tkText').value}}});
+toggle('tgSocial',  function(on){return {a:'social',   d:{on:on?1:0, text:$('socTx').value}}});
+
+/* live-edit the on-screen text while a layer is showing */
+['tbA','tbB','tbC'].forEach(function(id){
+  $(id).addEventListener('change',function(){
+    if($('tgTitle').classList.contains('on'))
+      rawSend({a:'titlebar',d:{on:1,a:$('tbA').value,b:$('tbB').value,c:$('tbC').value}});
+  });
+});
+['tkTag','tkText'].forEach(function(id){
+  $(id).addEventListener('change',function(){
+    if($('tgTicker').classList.contains('on'))
+      rawSend({a:'ticker',d:{on:1,tag:$('tkTag').value,text:$('tkText').value}});
+  });
+});
+$('socTx').addEventListener('change',function(){
+  if($('tgSocial').classList.contains('on')) rawSend({a:'social',d:{on:1,text:$('socTx').value}});
+});
+$('bugTeam').addEventListener('change',function(){
+  if($('tgBug').classList.contains('on')) rawSend({a:'bug',d:{on:1,team:$('bugTeam').value}});
+});
+
+$('pingBtn').onclick=function(){ send({a:'burst',k:'four',d:{sub:'CONNECTION TEST'}},'Test sent') };
+
+/* keep iOS from bouncing the whole page */
+document.addEventListener('touchmove',function(e){ if(e.scale&&e.scale!==1) e.preventDefault() },{passive:false});
+})();
+</script>
+</body>
+</html>
