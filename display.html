@@ -31,6 +31,7 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
   will-change:transform;
 }
 #fx{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none;z-index:60}
+#fx{image-rendering:auto}
 
 .layer{position:absolute;inset:0;pointer-events:none}
 .hide{display:none !important}
@@ -50,9 +51,8 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
   -webkit-background-clip:text; background-clip:text; color:transparent;
   -webkit-text-fill-color:transparent;
   filter:
-    drop-shadow(0 3px 0 rgba(0,0,0,.75))
-    drop-shadow(0 0 26px rgba(255,190,60,.42))
-    drop-shadow(0 18px 34px rgba(0,0,0,.85));
+    drop-shadow(0 3px 0 rgba(0,0,0,.8))
+    drop-shadow(0 10px 16px rgba(0,0,0,.8));
 }
 .solidfill{color:#fff;filter:drop-shadow(0 4px 0 rgba(0,0,0,.6)) drop-shadow(0 18px 30px rgba(0,0,0,.8))}
 
@@ -70,8 +70,8 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 #burst.on .bg{animation:bgIn var(--dur) linear forwards}
 @keyframes bgIn{0%{opacity:0}8%{opacity:1}74%{opacity:1}100%{opacity:0}}
 
-#burst .band{position:absolute;left:0;right:0;top:392px;height:316px}
-#burst.mega .band{top:362px;height:376px}
+#burst .band{position:absolute;left:0;right:0;top:calc(392px - var(--bandlift,0px));height:316px}
+#burst.mega .band{top:calc(362px - var(--bandlift,0px));height:376px}
 /* duck mode — the headline moves up so the duck owns the lower third */
 #burst.duckmode .band,#burst.duckmode.mega .band{top:214px;height:306px}
 #burst.duckmode .sub,#burst.duckmode.mega .sub{bottom:-92px}
@@ -80,7 +80,7 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 /* colour energy wedge — always taller than the slab so it reads as a frame */
 #burst .wedge{
   position:absolute;left:-32%;width:164%;top:-74px;bottom:-74px;
-  transform:skewY(-4.2deg) translateX(-135%);
+  transform:skewY(-4.2deg) translateX(-135%);will-change:transform;
 }
 #burst .wedge.a{
   background:linear-gradient(96deg,transparent 0%,var(--c1) 15%,var(--c2) 58%,var(--c1) 85%,transparent 100%);
@@ -113,7 +113,7 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
   border-top:8px solid transparent;border-bottom:8px solid transparent;
   border-image:linear-gradient(90deg,var(--c1),var(--c2) 50%,var(--c1)) 1;
   box-shadow:0 26px 80px rgba(0,0,0,.55);
-  transform:skewY(-4.2deg) scaleX(0);transform-origin:left center;
+  transform:skewY(-4.2deg) scaleX(0);transform-origin:left center;will-change:transform;
 }
 #burst.on .slab{animation:slabIn var(--dur) cubic-bezier(.16,1,.3,1) forwards}
 @keyframes slabIn{
@@ -132,14 +132,14 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 
 /* headline */
 #burst .wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-#burst .word{font-size:220px;position:relative;opacity:0;white-space:nowrap;transform-origin:center center}
+#burst .word{font-size:220px;position:relative;opacity:0;white-space:nowrap;transform-origin:center center;will-change:transform,opacity}
 #burst.on .word{animation:wordIn var(--dur) cubic-bezier(.14,1.4,.3,1) forwards}
 @keyframes wordIn{
   0%  {opacity:0;transform:skewX(-8deg) scale(2.4);filter:blur(24px)}
   9%  {opacity:1;transform:skewX(-8deg) scale(1);filter:blur(0)}
-  12% {opacity:1;transform:skewX(-8deg) scale(1.05);filter:blur(0)}
-  16% {opacity:1;transform:skewX(-8deg) scale(1);filter:blur(0)}
-  76% {opacity:1;transform:skewX(-8deg) scale(1);filter:blur(0)}
+  12% {opacity:1;transform:skewX(-8deg) scale(1.05);filter:none}
+  16% {opacity:1;transform:skewX(-8deg) scale(1);filter:none}
+  76% {opacity:1;transform:skewX(-8deg) scale(1);filter:none}
   100%{opacity:0;transform:skewX(-8deg) scale(1.12);filter:blur(9px)}
 }
 #burst .word .ink{display:block}
@@ -170,8 +170,8 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 
 /* player / team strip */
 #burst .meta{
-  position:absolute;bottom:112px;left:50%;
-  display:flex;align-items:center;gap:18px;opacity:0;
+  position:absolute;bottom:-182px;left:50%;
+  display:flex;align-items:center;gap:18px;opacity:0;white-space:nowrap;
   transform:translate(-50%,32px);
 }
 #burst.on .meta{animation:metaIn var(--dur) cubic-bezier(.16,1,.3,1) forwards}
@@ -194,13 +194,12 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 /* ============================================================
    1b. DUCK WALK — the dejected duck waddling off with the bat
    ============================================================ */
-#duckwalk{position:absolute;left:0;right:0;top:auto;bottom:8px;height:426px;z-index:46;pointer-events:none}
-#duckwalk .rig{position:absolute;left:0;bottom:0;width:540px;height:426px;transform:translateX(-660px)}
+#duckwalk{position:absolute;left:0;right:0;top:auto;bottom:var(--duckbase,8px);height:426px;z-index:46;pointer-events:none}
+#duckwalk .rig{position:absolute;left:0;bottom:0;width:540px;height:426px;transform:translateX(-660px);will-change:transform}
 #duckwalk.on .rig{animation:dkAcross var(--ddur) linear forwards}
 @keyframes dkAcross{from{transform:translateX(-660px)}to{transform:translateX(2020px)}}
 
-#duckwalk svg{width:100%;height:100%;display:block;overflow:visible;
-  filter:drop-shadow(0 18px 26px rgba(0,0,0,.45))}
+#duckwalk svg{width:100%;height:100%;display:block;overflow:visible}
 
 /* every moving part pivots in view-box units */
 #duckwalk .dkPart{transform-box:view-box;transform-origin:0 0}
@@ -282,7 +281,7 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 
 /* partner strip inside cards */
 .partners{position:absolute;bottom:54px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:26px}
-.partners .lbl{font-size:24px;letter-spacing:.3em;color:#8fa6cc;font-weight:700;text-transform:uppercase}
+.partners .lbl{font-size:26px;letter-spacing:.3em;color:#8fa6cc;font-weight:700;text-transform:uppercase}
 .partners .chipw{background:#fff;border-radius:14px;padding:12px 22px;display:flex;align-items:center;height:86px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 .partners .chipw img{max-height:58px;max-width:210px;display:block}
 
@@ -336,13 +335,13 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 /* ============================================================
    4. LOWER THIRD — player / info
    ============================================================ */
-#l3{z-index:34;left:104px;right:auto;top:auto;bottom:124px;width:1460px;height:260px}
+#l3{z-index:34;left:104px;right:auto;top:auto;bottom:calc(var(--bottomsafe,0px) + 124px);width:1460px;height:260px}
 #l3 .row{position:absolute;left:0;bottom:0;display:flex;align-items:stretch;height:152px}
 #l3 .acc{width:22px;background:linear-gradient(180deg,var(--c1),var(--c2));transform:scaleY(0);transform-origin:bottom}
 #l3.on .acc{animation:accIn .45s cubic-bezier(.16,1,.3,1) forwards}
 @keyframes accIn{to{transform:scaleY(1)}}
 #l3 .pane{background:linear-gradient(100deg,rgba(6,12,28,.96),rgba(10,27,61,.93));
-  backdrop-filter:blur(6px);display:flex;align-items:center;padding:0 96px 0 36px;
+  display:flex;align-items:center;padding:0 96px 0 36px;
   clip-path:polygon(0 0,100% 0,calc(100% - 48px) 100%,0 100%);
   transform:scaleX(0);transform-origin:left;overflow:hidden}
 #l3.on .pane{animation:paneIn .55s .12s cubic-bezier(.16,1,.3,1) forwards}
@@ -439,7 +438,7 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
    PERSISTENT LAYERS
    ============================================================ */
 /* corner logo bug */
-#bug{position:absolute;top:34px;left:38px;z-index:20;display:flex;align-items:center;gap:14px;
+#bug{position:absolute;top:58px;left:96px;z-index:20;display:flex;align-items:center;gap:14px;
   transform:translateX(-140%);opacity:0}
 #bug.on{animation:bugIn .7s cubic-bezier(.16,1,.3,1) forwards}
 #bug.out{animation:bugOut .5s cubic-bezier(.7,0,.84,0) forwards}
@@ -454,7 +453,7 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 #bug .m.dark img{max-height:66px;max-width:66px;border-radius:9px}
 
 /* match title bar (top centre) */
-#titlebar{position:absolute;top:34px;left:50%;transform:translate(-50%,-140%);z-index:20;
+#titlebar{position:absolute;top:48px;left:50%;transform:translate(-50%,-140%);z-index:20;
   display:flex;align-items:stretch;box-shadow:0 14px 40px rgba(0,0,0,.5)}
 #titlebar.on{animation:tbIn .7s cubic-bezier(.16,1,.3,1) forwards}
 #titlebar.out{animation:tbOut .5s cubic-bezier(.7,0,.84,0) forwards}
@@ -472,32 +471,32 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
   background:linear-gradient(90deg,rgba(6,12,28,.96),rgba(10,27,61,.94),rgba(6,12,28,.96));
   border-top:5px solid transparent;
   border-image:linear-gradient(90deg,var(--orange),var(--amber),var(--cyan)) 1;
-  display:flex;align-items:center;justify-content:center;gap:34px;height:132px}
+  display:flex;align-items:center;justify-content:center;gap:34px;height:150px;padding-bottom:44px}
 #sponsor.on{animation:spIn .8s cubic-bezier(.16,1,.3,1) forwards}
 #sponsor.out{animation:spOut .55s cubic-bezier(.7,0,.84,0) forwards}
 @keyframes spIn{to{transform:translateY(0)}}
 @keyframes spOut{from{transform:translateY(0)}to{transform:translateY(110%)}}
-#sponsor .lbl{font-size:24px;letter-spacing:.34em;color:#8fa6cc;font-weight:700;text-transform:uppercase}
-#sponsor .chipw{background:#fff;border-radius:12px;padding:10px 20px;display:flex;align-items:center;height:88px}
-#sponsor .chipw img{max-height:62px;max-width:220px;display:block}
+#sponsor .lbl{font-size:26px;letter-spacing:.34em;color:#8fa6cc;font-weight:700;text-transform:uppercase}
+#sponsor .chipw{background:#fff;border-radius:12px;padding:9px 18px;display:flex;align-items:center;height:76px}
+#sponsor .chipw img{max-height:54px;max-width:200px;display:block}
 
 /* ticker */
-#ticker{position:absolute;left:0;right:0;bottom:0;height:88px;z-index:18;transform:translateY(110%);
+#ticker{position:absolute;left:0;right:0;bottom:0;height:120px;z-index:18;transform:translateY(110%);
   display:flex;align-items:stretch;background:rgba(6,12,28,.95)}
 #ticker.on{animation:spIn .7s cubic-bezier(.16,1,.3,1) forwards}
 #ticker.out{animation:spOut .5s cubic-bezier(.7,0,.84,0) forwards}
 #ticker .tag{background:linear-gradient(135deg,var(--orange),var(--amber));color:#08111f;font-weight:800;
-  font-size:32px;letter-spacing:.2em;display:flex;align-items:center;padding:0 30px;text-transform:uppercase;
+  font-size:32px;letter-spacing:.2em;display:flex;align-items:center;padding:0 34px 40px 100px;text-transform:uppercase;
   clip-path:polygon(0 0,100% 0,calc(100% - 22px) 100%,0 100%)}
 #ticker .vp{flex:1;overflow:hidden;position:relative}
-#ticker .tr{position:absolute;white-space:nowrap;top:50%;transform:translateY(-50%);
+#ticker .tr{position:absolute;white-space:nowrap;top:auto;bottom:62px;
   font-size:38px;color:#fff;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
   will-change:transform}
 #ticker .tr span{padding:0 60px;color:#dce9ff}
 #ticker .tr span b{color:var(--amber);font-weight:800}
 
 /* social bug */
-#social{position:absolute;right:38px;bottom:150px;z-index:20;transform:translateX(150%);opacity:0;
+#social{position:absolute;right:100px;bottom:150px;z-index:20;transform:translateX(150%);opacity:0;
   display:flex;align-items:center;gap:14px;background:rgba(6,12,28,.92);padding:12px 24px;
   border-right:5px solid var(--amber)}
 #social.on{animation:socIn .7s cubic-bezier(.16,1,.3,1) forwards}
@@ -506,6 +505,19 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 @keyframes socOut{from{transform:translateX(0);opacity:1}to{transform:translateX(150%);opacity:0}}
 #social .ic{width:44px;height:44px;flex:none}
 #social .tx{color:#fff;font-size:34px;font-weight:700;letter-spacing:.14em}
+
+/* low-power mode: ?fx=low strips the costly full-frame effects */
+body.lowfx #burst .bg,
+body.lowfx #burst .shine,
+body.lowfx #burst .streaks{display:none !important}
+body.lowfx .metal{filter:drop-shadow(0 3px 0 rgba(0,0,0,.85))}
+body.lowfx #burst .slab{box-shadow:none}
+
+/* on-device fps meter, ?debug=1 */
+#fps{position:absolute;right:14px;top:14px;z-index:99;
+  background:rgba(0,0,0,.72);color:#7CFFB2;font:700 26px/1 'Barlow Condensed',monospace;
+  padding:8px 14px;border-radius:8px;letter-spacing:.06em;display:none}
+body.dbg #fps{display:block}
 
 /* toast for local testing only */
 #toast{position:absolute;left:50%;top:24px;transform:translateX(-50%);z-index:99;
@@ -530,10 +542,10 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
         <div class="impact word" id="bWord"><span class="ink metal">FOUR</span><div class="shine"></div></div>
       </div>
       <div class="cond sub" id="bSub"><b>BOUNDARY</b></div>
-    </div>
-    <div class="meta" id="bMeta">
-      <div class="chip"><span id="bChip">KWPL 3</span></div>
-      <div class="cond nm" id="bName"></div>
+      <div class="meta" id="bMeta">
+        <div class="chip"><span id="bChip">KWPL 3</span></div>
+        <div class="cond nm" id="bName"></div>
+      </div>
     </div>
   </div>
 
@@ -737,6 +749,7 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
     <div class="tx" id="socialTx">@divyaangmyithri</div>
   </div>
 
+  <div id="fps"></div>
   <div id="toast"></div>
 </div>
 
@@ -822,11 +835,21 @@ window.addEventListener('resize', fit); fit();
 /* ============================================================
    PARTICLE FX
    ============================================================ */
-var cv=$('fx'), cx=cv.getContext('2d'), parts=[], raf=null;
+var _q=new URLSearchParams(location.search);
+var LOWFX=_q.get('fx')==='low';
+if(LOWFX) document.body.classList.add('lowfx');
+if(_q.get('debug')==='1') document.body.classList.add('dbg');
+
+var cv=$('fx'), cx=cv.getContext('2d',{alpha:true}), parts=[], raf=null;
+/* the confetti buffer runs at half resolution and is scaled back up by CSS —
+   four times less fill rate, and no visible difference on confetti */
+var FXS=LOWFX?0.3:0.4;
+cv.width=1920*FXS; cv.height=1080*FXS;
 /* stadium-style confetti cannons fired from both wings, so the
    headline in the middle of frame is never covered */
 function emit(kind,c1,c2){
-  var n = kind==='mega'?150 : kind==='confetti'?100 : kind==='shard'?85 : 55;
+  var n = kind==='mega'?58 : kind==='confetti'?40 : kind==='shard'?34 : 22;
+  if(LOWFX) n=Math.round(n*0.45);
   var cols=[c1,c2,'#ffffff','#FFE9B8'];
   var pow = kind==='mega'?1.35:1;
   [-1,1].forEach(function(side){
@@ -839,7 +862,7 @@ function emit(kind,c1,c2){
         vx: Math.cos(ang)*sp*1.9 + side*7,
         vy: Math.sin(ang)*sp*1.15,
         g:.17+Math.random()*.13, life:1, dec:.0030+Math.random()*.0035,
-        w:(kind==='shard'?4:7)+Math.random()*11, h:(kind==='shard'?24:9)+Math.random()*13,
+        w:(kind==='shard'?5:9)+Math.random()*13, h:(kind==='shard'?28:11)+Math.random()*15,
         rot:Math.random()*6.28, vr:(Math.random()-.5)*.42,
         col:cols[(Math.random()*cols.length)|0]
       });
@@ -848,16 +871,20 @@ function emit(kind,c1,c2){
   if(!raf) raf=requestAnimationFrame(tick);
 }
 function tick(){
-  cx.clearRect(0,0,1920,1080);
+  cx.setTransform(1,0,0,1,0,0);
+  cx.clearRect(0,0,cv.width,cv.height);
   for(var i=parts.length-1;i>=0;i--){
     var p=parts[i];
     p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.vx*=.988; p.rot+=p.vr; p.life-=p.dec;
     if(p.life<=0||p.y>1200){parts.splice(i,1);continue}
-    cx.save(); cx.globalAlpha=Math.max(0,Math.min(1,p.life));
-    cx.translate(p.x,p.y); cx.rotate(p.rot); cx.fillStyle=p.col;
-    cx.fillRect(-p.w/2,-p.h/2,p.w,p.h); cx.restore();
+    var c=Math.cos(p.rot)*FXS, s=Math.sin(p.rot)*FXS;
+    cx.setTransform(c,s,-s,c,p.x*FXS,p.y*FXS);
+    cx.globalAlpha = p.life>1?1:(p.life<0?0:p.life);
+    cx.fillStyle=p.col;
+    cx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
   }
-  if(parts.length) raf=requestAnimationFrame(tick); else {raf=null;cx.clearRect(0,0,1920,1080)}
+  if(parts.length) raf=requestAnimationFrame(tick);
+  else {raf=null; cx.setTransform(1,0,0,1,0,0); cx.clearRect(0,0,cv.width,cv.height)}
 }
 
 /* ============================================================
@@ -1063,9 +1090,16 @@ function buildBug(d){
 }
 /* keep the bottom bars from sitting on top of each other */
 function layoutBottom(){
-  var base = persist.ticker ? 88 : 0;
+  var base = persist.ticker ? 120 : 0;
+  var occupied = base + (persist.sponsor?150:0);
   $('sponsor').style.bottom = base+'px';
-  $('social').style.bottom  = (base + (persist.sponsor?132:0) + 30)+'px';
+  $('social').style.bottom  = (occupied + 30)+'px';
+  /* anything anchored low lifts clear of the bars that are switched on */
+  var r=document.documentElement.style;
+  r.setProperty('--bottomsafe', occupied+'px');
+  r.setProperty('--bandlift', Math.round(Math.min(occupied,240)*0.5)+'px');
+  /* the duck clears the ticker; with a sponsor bar as well it walks in front of it */
+  r.setProperty('--duckbase', (Math.min(occupied,120)+8)+'px');
 }
 function buildSponsor(){
   $('sponsor').innerHTML='<div class="lbl">Organised by</div>'+
@@ -1092,7 +1126,7 @@ function setTicker(text,tag){
   var x=1920, w=tr.scrollWidth/2, spd=parseFloat(2.6);
   (function loop(){
     x-=spd; if(x <= -w) x += w;
-    tr.style.transform='translate(' + x + 'px,-50%)';
+    tr.style.transform='translateX(' + x + 'px)';
     tkAnim=requestAnimationFrame(loop);
   })();
 }
@@ -1118,7 +1152,7 @@ function clearAll(){
     var el=$(id); el.classList.remove('on','out'); hide(el);
   });
   stopDuck();
-  hideCard(); parts.length=0; cx.clearRect(0,0,1920,1080);
+  hideCard(); parts.length=0; cx.setTransform(1,0,0,1,0,0); cx.clearRect(0,0,cv.width,cv.height);
 }
 
 function handle(msg){
@@ -1258,9 +1292,26 @@ var net=MQTT(function(m){
 /* heartbeat so the controller can show "display online" */
 setInterval(function(){ net.send({a:'hb',from:'display',ts:Date.now()}) },3000);
 
+/* ---- on-device fps meter (?debug=1) ---- */
+if(_q.get('debug')==='1'){
+  var fEl=$('fps'), fN=0, fT=performance.now(), fWorst=60;
+  (function loop(t){
+    fN++;
+    if(t-fT>=500){
+      var fps=Math.round(fN*1000/(t-fT));
+      if(fps<fWorst) fWorst=fps;
+      fEl.textContent=fps+' FPS   (worst '+fWorst+')';
+      fEl.style.color = fps>=50?'#7CFFB2' : fps>=30?'#FFD36E' : '#FF8A8A';
+      fN=0; fT=t;
+    }
+    requestAnimationFrame(loop);
+  })(performance.now());
+}
+
 /* ============================================================
    BOOT
    ============================================================ */
+layoutBottom();
 window.KWPL={fire:handle, teams:TEAMS, bursts:BURSTS, cards:CARDS};
 
 /* URL presets so you can hard-code a look on the YoloBox source */
