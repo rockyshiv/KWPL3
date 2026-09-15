@@ -461,12 +461,16 @@ function connect(){
     ws.send(pkt(0x10, mqttStr('MQTT').concat([4,0x02,0,60]).concat(mqttStr(cid))));
   };
   ws.onmessage=function(ev){
-    var u=new Uint8Array(ev.data),m=new Uint8Array(buf.length+u.length);
-    m.set(buf);m.set(u,buf.length);buf=m;parse();
+    try{
+      var u=new Uint8Array(ev.data),m=new Uint8Array(buf.length+u.length);
+      m.set(buf);m.set(u,buf.length);buf=m;
+      if(buf.length>262144){ buf=new Uint8Array(0); try{ws.close()}catch(e){} return }
+      parse();
+    }catch(e){ buf=new Uint8Array(0); try{ws.close()}catch(e2){} }
   };
-  ws.onclose=function(){clearTimeout(to);alive=false;clearInterval(ping);setStat();next()};
+  ws.onclose=function(){clearTimeout(to);alive=false;buf=new Uint8Array(0);clearInterval(ping);setStat();next()};
   ws.onerror=function(){try{ws.close()}catch(e){}};
-  function next(){bi++;retry=Math.min(retry+1,6);setTimeout(connect,800+retry*700)}
+  function next(){bi++;retry=Math.min(retry+1,6);setTimeout(connect,800+retry*700+Math.random()*600)}
   function parse(){
     while(buf.length>=2){
       var ml=0,mult=1,i=1,b;
@@ -492,7 +496,9 @@ function connect(){
 }
 connect();
 
+var CID = 'c'+Math.random().toString(36).slice(2,8), seq=0;
 function rawSend(obj){
+  if(!obj.id) obj.id = CID+'-'+(++seq);
   var sent=false;
   if(alive&&ws&&ws.readyState===1){
     var t=mqttStr(TOPIC),p=enc.encode(JSON.stringify(obj)),body=t.slice();
@@ -501,8 +507,31 @@ function rawSend(obj){
   }
   try{if(bc)bc.postMessage(obj)}catch(e){}
   try{localStorage.setItem('kwpl3-'+ROOM,JSON.stringify({m:obj,t:Date.now()}))}catch(e){}
+  if(!sent && obj.a!=='hb' && obj.a!=='hello') queueRetry(obj);
   return sent;
 }
+
+/* A command pressed during a brief relay drop used to vanish. Hold it for a few
+   seconds and send it the moment the connection is back. Anything older than that
+   is dropped on purpose — a stale FOUR arriving two overs later is worse than none. */
+var pending=[];
+function queueRetry(obj){
+  pending.push({m:obj, t:Date.now()});
+  if(pending.length>8) pending.shift();
+}
+setInterval(function(){
+  if(!alive || !pending.length) return;
+  var now=Date.now(), out=pending; pending=[];
+  out.forEach(function(p){
+    if(now-p.t > 6000) return;                       /* too old to be useful */
+    if(alive&&ws&&ws.readyState===1){
+      var t=mqttStr(TOPIC), b=enc.encode(JSON.stringify(p.m)), body=t.slice();
+      for(var i=0;i<b.length;i++) body.push(b[i]);
+      try{ ws.send(pkt(0x30,body)) }catch(e){}
+    }
+  });
+  if(out.length) flash('reconnected — resent');
+},1200);
 var bc=null; try{bc=new BroadcastChannel('kwpl3-'+ROOM)}catch(e){}
 
 /* ---------------- status ---------------- */
@@ -531,8 +560,14 @@ function flash(msg,bad){
 }
 window.flash=flash;
 
+function trimFields(o){
+  if(o && o.d) for(var k in o.d){
+    if(typeof o.d[k]==='string') o.d[k]=o.d[k].replace(/\s+/g,' ').trim().slice(0,400);
+  }
+  return o;
+}
 function send(obj,label){
-  var ok=rawSend(obj);
+  var ok=rawSend(trimFields(obj));
   flash(ok?(label||'sent'):'offline — retrying', !ok);
   if(navigator.vibrate) try{navigator.vibrate(ok?18:[25,40,25])}catch(e){}
 }

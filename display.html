@@ -814,6 +814,31 @@ function show(el){el.classList.remove('hide')}
 function hide(el){el.classList.add('hide')}
 function setVars(c1,c2){var r=document.documentElement.style;r.setProperty('--c1',c1);r.setProperty('--c2',c2)}
 function esc(s){return String(s==null?'':s)}
+/* esc() is for textContent. Anything that reaches innerHTML must go through hesc(),
+   otherwise a name typed on the phone — or pushed by anyone who learns the room code —
+   becomes live markup on the broadcast. */
+function hesc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+/* trim runaway input so one long paste can never blow the layout apart */
+function clamp(s,n){ s=String(s==null?'':s); return s.length>n ? s.slice(0,n) : s }
+/* every number off the wire goes through here — no NaN reaches a timer or a CSS value */
+function num(v,def,min,max){
+  var n=parseFloat(v);
+  if(!isFinite(n)) n=def;
+  if(min!=null&&n<min) n=min;
+  if(max!=null&&n>max) n=max;
+  return n;
+}
+/* ---- scene generation tokens ----
+   Every scene hide is scheduled on a timer. If a newer graphic starts before that
+   timer fires, the stale callback used to hide the NEW graphic mid-animation.
+   Each play* bumps its scene's token; a timer only acts if it still owns the scene. */
+var gen={};
+function bump(k){ gen[k]=(gen[k]||0)+1; return gen[k] }
+function owns(k,g){ return gen[k]===g }
 
 /* ---------- stage scaling ---------- */
 function fit(){
@@ -904,6 +929,7 @@ function fitWord(el,mega){
 }
 function playBurst(key,d){
   d=d||{}; var p=BURSTS[key]; if(!p) return;
+  var g=bump('burst');
   var el=$('burst');
   el.classList.remove('on','mega'); void el.offsetWidth;
   var word = d.word || p.w, sub = d.sub!=null?d.sub:p.s;
@@ -914,12 +940,14 @@ function playBurst(key,d){
     if(who) sub = who + ' · ' + sub;
   }
   setVars(d.c1||p.c1, d.c2||p.c2);
-  el.style.setProperty('--dur',(d.dur||p.dur)+'ms');
-  $('bWord').innerHTML = '<span class="ink metal">'+esc(word)+'</span><div class="shine"></div>';
-  $('bSub').innerHTML = '<b>'+esc(sub)+'</b>';
+  var DUR=num(d.dur,p.dur,800,20000);
+  el.style.setProperty('--dur',DUR+'ms');
+  $('bWord').innerHTML = '<span class="ink metal">'+hesc(clamp(word,40))+'</span><div class="shine"></div>';
+  $('bSub').innerHTML = '<b>'+hesc(clamp(sub,60))+'</b>';
   $('bSub').style.display = sub ? 'block' : 'none';
   $('bSub').style.fontSize = (sub.length>30 ? 32 : sub.length>22 ? 38 : 44)+'px';
-  var nm = d.player||'', tm = d.team?(TEAMS[d.team]?TEAMS[d.team].short:d.team):'';
+  $('bSub').style.display = sub ? 'block' : 'none';
+  var nm = clamp(d.player||'',32), tm = d.team?(TEAMS[d.team]?TEAMS[d.team].short:clamp(d.team,16)):'';
   if(nm||tm){
     $('bChip').textContent = tm||'KWPL 3';
     $('bName').textContent = nm;
@@ -928,23 +956,30 @@ function playBurst(key,d){
   show(el); if(p.mega) el.classList.add('mega');
   fitWord($('bWord'), p.mega);        /* measure only once visible */
   el.classList.add('on');
-  if(p.duck) playDuck(parseInt(d.duckDur||p.duck,10));
-  setTimeout(function(){emit(p.fx, d.c1||p.c1, d.c2||p.c2)}, 160);
-  if(p.fx==='mega') setTimeout(function(){emit('confetti', d.c1||p.c1, d.c2||p.c2)}, 700);
+  if(p.duck) playDuck(num(d.duckDur,p.duck,1000,20000));
+  setTimeout(function(){ if(owns('burst',g)) emit(p.fx, d.c1||p.c1, d.c2||p.c2) }, 160);
+  if(p.fx==='mega') setTimeout(function(){ if(owns('burst',g)) emit('confetti', d.c1||p.c1, d.c2||p.c2) }, 700);
   clearT('burst');
-  timers.burst=setTimeout(function(){el.classList.remove('on');hide(el)},(d.dur||p.dur)+120);
+  timers.burst=setTimeout(function(){
+    if(!owns('burst',g)) return;          /* a newer graphic already took over */
+    el.classList.remove('on');hide(el);
+  }, DUR+120);
 }
 
 /* ---- DUCK WALK ---- */
 function playDuck(ms){
-  var el=$('duckwalk');
+  ms=num(ms,6600,1000,20000);
+  var g=bump('duck'), el=$('duckwalk');
   el.classList.remove('on'); void el.offsetWidth;
   el.style.setProperty('--ddur', ms+'ms');
   show(el); el.classList.add('on');
   clearT('duck');
-  timers.duck=setTimeout(function(){ el.classList.remove('on'); hide(el) }, ms+120);
+  timers.duck=setTimeout(function(){
+    if(!owns('duck',g)) return;
+    el.classList.remove('on'); hide(el);
+  }, ms+120);
 }
-function stopDuck(){ clearT('duck'); var el=$('duckwalk'); el.classList.remove('on'); hide(el) }
+function stopDuck(){ bump('duck'); clearT('duck'); var el=$('duckwalk'); el.classList.remove('on'); hide(el) }
 
 /* ---- FULLSCREEN CARD ---- */
 var cardTimer=null;
@@ -956,16 +991,17 @@ function partnerHTML(){
     '<div class="chipw"><img src="'+LOGOS.aura+'" alt="Auraclusive"></div>';
 }
 function playCard(key,d){
-  d=d||{}; var p=CARDS[key]||{t:key,s:'',n:''};
+  d=d||{}; var p=CARDS[key]||{t:clamp(key,40),s:'',n:''};
+  bump('card');                      /* cancels any pending hide */
   var el=$('card');
   clearInterval(cardTimer);
   setVars(d.c1||'#FF6A13', d.c2||'#FFB020');
   $('cardLogo').src = LOGOS.kwpl;
-  $('cardTitle').textContent = esc(d.title||p.t);
-  $('cardSub').textContent   = esc(d.sub!=null?d.sub:p.s);
-  $('cardNote').textContent  = esc(d.note!=null?d.note:p.n);
+  $('cardTitle').textContent = clamp(d.title||p.t,44);
+  $('cardSub').textContent   = clamp(d.sub!=null?d.sub:p.s,60);
+  $('cardNote').textContent  = clamp(d.note!=null?d.note:p.n,70);
   $('cardPartners').innerHTML = partnerHTML();
-  var mins = parseFloat(d.mins||0);
+  var mins = num(d.mins,0,0,180);
   if(mins>0){
     show($('cardClock'));
     var end = Date.now()+mins*60000;
@@ -979,21 +1015,26 @@ function playCard(key,d){
 }
 function hideCard(){
   var el=$('card'); if(el.classList.contains('hide'))return;
+  var g=bump('card');
   clearInterval(cardTimer);
   el.classList.add('out');
-  setTimeout(function(){el.classList.remove('on','out');hide(el)},760);
+  setTimeout(function(){
+    if(!owns('card',g)) return;      /* a new card came up mid fade-out */
+    el.classList.remove('on','out');hide(el);
+  },760);
 }
 
 /* ---- VERSUS ---- */
 function playVS(d){
   d=d||{};
+  bump('vs');
   var A=TEAMS[d.a]||TEAMS.BEL, B=TEAMS[d.b]||TEAMS.TUM, el=$('vs');
   $('vsLimg').src=A.logo; $('vsRimg').src=B.logo;
   $('vsLname').textContent=A.name; $('vsRname').textContent=B.name;
-  $('vsLsub').textContent=esc(d.aSub||'KWPL SEASON 3');
-  $('vsRsub').textContent=esc(d.bSub||'KWPL SEASON 3');
-  $('vsStrap').textContent=esc(d.strap||'KWPL SEASON 3');
-  $('vsVenue').textContent=esc(d.venue||'VET GROUND, JP NAGAR · BENGALURU');
+  $('vsLsub').textContent=clamp(d.aSub||'KWPL SEASON 3',30);
+  $('vsRsub').textContent=clamp(d.bSub||'KWPL SEASON 3',30);
+  $('vsStrap').textContent=clamp(d.strap||'KWPL SEASON 3',46);
+  $('vsVenue').textContent=clamp(d.venue||'VET GROUND, JP NAGAR · BENGALURU',56);
   $('vsL').querySelector('.tint').style.background=
     'radial-gradient(58% 58% at 46% 40%,'+(A.vc||A.c1)+'55,transparent 72%),'+
     'linear-gradient(118deg,'+(A.vc||A.c1)+'AA 0%,'+(A.vc||A.c1)+'2E 52%,transparent 100%)';
@@ -1006,34 +1047,40 @@ function playVS(d){
 }
 function genericHide(id,ms){
   var el=$(id); if(el.classList.contains('hide'))return;
+  var g=bump(id);
   el.classList.add('out');
-  setTimeout(function(){el.classList.remove('on','out');hide(el)},ms||500);
+  setTimeout(function(){
+    if(!owns(id,g)) return;
+    el.classList.remove('on','out');hide(el);
+  },ms||500);
 }
 
 /* ---- LOWER THIRD ---- */
 function playL3(d){
   d=d||{}; var el=$('l3'), T=TEAMS[d.team];
+  bump('l3');
   setVars(T?T.c1:'#FF6A13', T?T.c2:'#FFB020');
-  $('l3Name').textContent=esc(d.name||'PLAYER');
-  $('l3Role').textContent=esc(d.role||'');
+  $('l3Name').textContent=clamp(d.name||'PLAYER',34);
+  $('l3Role').textContent=clamp(d.role||'',40);
   if(T){ $('l3Img').src=T.logo; $('l3TeamName').textContent=T.short; $('l3Team').style.display='flex' }
   else $('l3Team').style.display='none';
   el.classList.remove('out','on'); show(el); void el.offsetWidth; el.classList.add('on');
   clearT('l3');
-  var hold=d.hold==null?9:parseFloat(d.hold);
-  if(hold>0) timers.l3=setTimeout(function(){genericHide('l3',420)}, hold*1000);
+  var gl=gen.l3, hold=num(d.hold,9,0,600);
+  if(hold>0) timers.l3=setTimeout(function(){ if(owns('l3',gl)) genericHide('l3',420) }, hold*1000);
 }
 
 /* ---- MOTM ---- */
 function playMOTM(d){
   d=d||{}; var el=$('motm'), T=TEAMS[d.team];
+  bump('motm');
   setVars('#FF6A13','#FFB020');
-  $('motmTitle').textContent=esc(d.title||'MAN OF THE MATCH');
-  $('motmName').textContent=esc(d.name||'PLAYER');
-  $('motmTeam').textContent=T?T.name:esc(d.teamName||'');
+  $('motmTitle').textContent=clamp(d.title||'MAN OF THE MATCH',34);
+  $('motmName').textContent=clamp(d.name||'PLAYER',28);
+  $('motmTeam').textContent=T?T.name:clamp(d.teamName||'',34);
   if(T){$('motmCrest').src=T.logo; show($('motmCrestW'))} else hide($('motmCrestW'));
-  var st=(d.stats||'').split('|').filter(function(x){return x.trim()});
-  $('motmStats').innerHTML = st.map(function(s){return '<div><span>'+esc(s.trim())+'</span></div>'}).join('');
+  var st=(d.stats||'').split('|').filter(function(x){return x.trim()}).slice(0,4);
+  $('motmStats').innerHTML = st.map(function(s){return '<div><span>'+hesc(clamp(s.trim(),22))+'</span></div>'}).join('');
   el.classList.remove('out','on'); show(el); void el.offsetWidth; el.classList.add('on');
   setTimeout(function(){emit('confetti','#FFB020','#FF6A13')},600);
 }
@@ -1041,12 +1088,14 @@ function playMOTM(d){
 /* ---- PLAYING XI ---- */
 function playXI(d){
   d=d||{}; var el=$('xi'), T=TEAMS[d.team]||TEAMS.BEL;
+  bump('xi');
   setVars(T.c1,T.c2);
   $('xiCrest').src=T.logo; $('xiTeam').textContent=T.name;
-  $('xiTitle').textContent=esc(d.title||'PLAYING XI');
-  var names=(d.list||'').split(/[\n|,]/).map(function(s){return s.trim()}).filter(Boolean);
+  $('xiTitle').textContent=clamp(d.title||'PLAYING XI',30);
+  /* cap at 16 — more than that runs off the bottom of frame */
+  var names=(d.list||'').split(/[\n|,]/).map(function(s){return s.trim()}).filter(Boolean).slice(0,16);
   $('xiGrid').innerHTML = names.map(function(n,i){
-    return '<li style="animation-delay:'+(0.35+i*0.055)+'s"><b>'+(i+1)+'</b><span>'+esc(n)+'</span></li>';
+    return '<li style="animation-delay:'+(0.35+i*0.055).toFixed(3)+'s"><b>'+(i+1)+'</b><span>'+hesc(clamp(n,30))+'</span></li>';
   }).join('');
   el.classList.remove('out','on'); show(el); void el.offsetWidth; el.classList.add('on');
 }
@@ -1054,32 +1103,36 @@ function playXI(d){
 /* ---- DRS ---- */
 function playDRS(d){
   d=d||{}; var el=$('drs'), v=(d.verdict||'out').toLowerCase();
+  bump('drs');
   var map={out:{t:'OUT',c1:'#E01B24',c2:'#FF6A13',cls:'out'},
            notout:{t:'NOT OUT',c1:'#12B76A',c2:'#7CFFB2',cls:'notout'},
            umpire:{t:"UMPIRE'S CALL",c1:'#FFB020',c2:'#FFE08A',cls:'umpire'}};
   var m=map[v]||map.out;
   setVars(m.c1,m.c2);
-  $('drsHead').textContent=esc(d.head||'DECISION REVIEW');
+  $('drsHead').textContent=clamp(d.head||'DECISION REVIEW',34);
   var vd=$('drsVerdict'); vd.className='impact verdict '+m.cls; vd.textContent=m.t;
-  $('drsNote').textContent=esc(d.note||'REVIEW BY THE FIELDING SIDE');
+  $('drsNote').textContent=clamp(d.note||'REVIEW BY THE FIELDING SIDE',46);
   var lit=v==='out'?3:v==='umpire'?2:1, h='';
   for(var i=0;i<3;i++) h+='<i class="'+(i<lit?'lit':'')+'"></i>';
   $('drsLights').innerHTML=h;
   el.classList.remove('out','on'); show(el); void el.offsetWidth; el.classList.add('on');
   clearT('drs');
-  var hold=d.hold==null?7:parseFloat(d.hold);
-  if(hold>0) timers.drs=setTimeout(function(){genericHide('drs',420)},hold*1000);
+  var gd=gen.drs, hold=num(d.hold,7,0,600);
+  if(hold>0) timers.drs=setTimeout(function(){ if(owns('drs',gd)) genericHide('drs',420) },hold*1000);
 }
 
 /* ============================================================
    PERSISTENT LAYERS
    ============================================================ */
 function toggleLayer(id,on,ms){
-  var el=$(id);
+  var el=$(id), g=bump('layer:'+id);
   if(on){ el.classList.remove('out'); show(el); void el.offsetWidth; el.classList.add('on') }
   else { if(el.classList.contains('hide'))return;
          el.classList.remove('on'); el.classList.add('out');
-         setTimeout(function(){el.classList.remove('out');hide(el)},ms||620) }
+         setTimeout(function(){
+           if(!owns('layer:'+id,g)) return;   /* switched back on mid fade-out */
+           el.classList.remove('out');hide(el);
+         },ms||620) }
 }
 function buildBug(d){
   d=d||{};
@@ -1114,32 +1167,35 @@ function buildSponsor(){
 var tkAnim=null;
 function setTicker(text,tag){
   var tr=$('tkTrack');
-  $('tkTag').textContent=tag||'KWPL 3';
-  var items=(text||'').split('|').map(function(s){return s.trim()}).filter(Boolean);
+  $('tkTag').textContent=clamp(tag||'KWPL 3',14);
+  var items=(text||'').split('|').map(function(s){return clamp(s.trim(),120)}).filter(Boolean).slice(0,20);
   if(!items.length) items=['KARNATAKA WHEELCHAIR PREMIER LEAGUE SEASON 3'];
   var html=items.map(function(s){
     var p=s.split(':');
-    return '<span>'+(p.length>1?'<b>'+esc(p[0])+':</b> '+esc(p.slice(1).join(':')):esc(s))+'</span>';
+    return '<span>'+(p.length>1?'<b>'+hesc(p[0])+':</b> '+hesc(p.slice(1).join(':')):hesc(s))+'</span>';
   }).join('');
   tr.innerHTML=html+html;
-  cancelAnimationFrame(tkAnim);
-  var x=1920, w=tr.scrollWidth/2, spd=parseFloat(2.6);
+  stopTicker();
+  var x=1920, w=tr.scrollWidth/2 || 1, spd=2.6;
   (function loop(){
     x-=spd; if(x <= -w) x += w;
     tr.style.transform='translateX(' + x + 'px)';
     tkAnim=requestAnimationFrame(loop);
   })();
 }
+/* without this the marquee kept running every frame for the whole match,
+   writing transforms to a hidden element long after the ticker was switched off */
+function stopTicker(){ if(tkAnim){ cancelAnimationFrame(tkAnim); tkAnim=null } }
 function setTitlebar(d){
   d=d||{};
-  $('tbA').textContent=esc(d.a||'KWPL 3');
+  $('tbA').textContent=clamp(d.a||'KWPL 3',14);
   var b=d.b;
   if(!b && d.teamA && d.teamB){
     var A=TEAMS[d.teamA], B=TEAMS[d.teamB];
     b=(A?A.short:d.teamA)+'  vs  '+(B?B.short:d.teamB);
   }
-  $('tbB').textContent=esc(b||'KWPL SEASON 3');
-  $('tbC').textContent=esc(d.c||'VET GROUND');
+  $('tbB').textContent=clamp(b||'KWPL SEASON 3',44);
+  $('tbC').textContent=clamp(d.c||'VET GROUND',16);
 }
 
 /* ============================================================
@@ -1148,6 +1204,9 @@ function setTitlebar(d){
 var persist = {bug:false,titlebar:false,sponsor:false,ticker:false,social:false};
 
 function clearAll(){
+  /* bump every token first so no in-flight timer can act on what comes next */
+  ['burst','card','vs','motm','xi','drs','l3','duck'].forEach(bump);
+  for(var k in timers) clearT(k);
   ['burst','vs','motm','xi','drs','l3'].forEach(function(id){
     var el=$(id); el.classList.remove('on','out'); hide(el);
   });
@@ -1156,8 +1215,16 @@ function clearAll(){
 }
 
 function handle(msg){
-  if(!msg||!msg.a) return;
-  var d=msg.d||{};
+  try{ handleInner(msg) }
+  catch(err){
+    /* a malformed command must never take the overlay down mid-match */
+    if(window.console&&console.warn) console.warn('[KWPL] bad command ignored:', err && err.message, msg);
+    if(DEBUG) toast('IGNORED: '+(err&&err.message||'error'));
+  }
+}
+function handleInner(msg){
+  if(!msg||typeof msg!=='object'||typeof msg.a!=='string') return;
+  var d=(msg.d&&typeof msg.d==='object')?msg.d:{};
   switch(msg.a){
     case 'burst':  playBurst(msg.k,d); break;
     case 'card':   playCard(msg.k,d); break;
@@ -1175,10 +1242,12 @@ function handle(msg){
     case 'bug':    if(d.on)buildBug(d); persist.bug=!!d.on; toggleLayer('bug',d.on,520); break;
     case 'titlebar': if(d.on)setTitlebar(d); persist.titlebar=!!d.on; toggleLayer('titlebar',d.on,520); break;
     case 'sponsor':  if(d.on)buildSponsor(); persist.sponsor=!!d.on; layoutBottom(); toggleLayer('sponsor',d.on,560); break;
-    case 'ticker':   if(d.on)setTicker(d.text,d.tag); persist.ticker=!!d.on; layoutBottom(); toggleLayer('ticker',d.on,520); break;
-    case 'social':   if(d.on)$('socialTx').textContent=esc(d.text||'@divyaangmyithri'); persist.social=!!d.on; toggleLayer('social',d.on,520); break;
+    case 'ticker':
+      if(d.on) setTicker(d.text,d.tag); else stopTicker();
+      persist.ticker=!!d.on; layoutBottom(); toggleLayer('ticker',d.on,520); break;
+    case 'social':   if(d.on)$('socialTx').textContent=clamp(d.text||'@divyaangmyithri',28); persist.social=!!d.on; toggleLayer('social',d.on,520); break;
     case 'clear':  clearAll(); break;
-    case 'clearAll': clearAll();
+    case 'clearAll': clearAll(); stopTicker();
       ['bug','titlebar','sponsor','ticker','social'].forEach(function(k){persist[k]=false;toggleLayer(k,false)});
       layoutBottom();
       break;
@@ -1227,15 +1296,25 @@ function MQTT(onMsg,onState){
       ws.send(pkt(0x10, vh.concat(mqttStr(cid))));
     };
     ws.onmessage=function(ev){
-      var u=new Uint8Array(ev.data), m=new Uint8Array(buf.length+u.length);
-      m.set(buf); m.set(u,buf.length); buf=m; parse();
+      try{
+        var u=new Uint8Array(ev.data), m=new Uint8Array(buf.length+u.length);
+        m.set(buf); m.set(u,buf.length); buf=m;
+        /* a desynced stream would otherwise grow this forever */
+        if(buf.length>262144){ buf=new Uint8Array(0); try{ws.close()}catch(e){} return }
+        parse();
+      }catch(e){ buf=new Uint8Array(0); try{ws.close()}catch(e2){} }
     };
-    ws.onclose=function(){ clearTimeout(to); alive=false; onState(false); clearInterval(ping); next() };
+    ws.onclose=function(){
+      clearTimeout(to); alive=false; buf=new Uint8Array(0);
+      try{ onState(false) }catch(e){}
+      clearInterval(ping); next();
+    };
     ws.onerror=function(){ try{ws.close()}catch(e){} };
     function next(){
       if(dead) return;
       bi++; retry=Math.min(retry+1,6);
-      setTimeout(connect, 800+retry*700);
+      /* jitter stops the overlay and the phone hammering the same broker in lockstep */
+      setTimeout(connect, 800 + retry*700 + Math.random()*600);
     }
     function parse(){
       while(buf.length>=2){
@@ -1253,7 +1332,7 @@ function MQTT(onMsg,onState){
         } else if(type===3){ // PUBLISH
           var tl=(body[0]<<8)|body[1];
           var payload=dec.decode(body.subarray(2+tl));
-          try{ onMsg(JSON.parse(payload)) }catch(e){}
+          try{ onMsg(JSON.parse(payload)) }catch(e){ /* not our JSON — ignore */ }
         }
       }
     }
@@ -1270,19 +1349,31 @@ function MQTT(onMsg,onState){
   };
 }
 
-/* same-device fallback */
+/* ---- single inbound entry point ----
+   The controller reaches us three ways at once (relay, BroadcastChannel, localStorage).
+   On one device all three fire, which used to restart the same animation two or three
+   times in a row. Every command now carries an id and is acted on exactly once. */
+var seen=Object.create(null), seenQ=[];
+function route(m){
+  if(!m||typeof m!=='object') return;
+  if(m.a==='hb'||m.a==='hello') return;        /* transport chatter, not a command */
+  if(m.id){
+    if(seen[m.id]) return;
+    seen[m.id]=1; seenQ.push(m.id);
+    if(seenQ.length>400) delete seen[seenQ.shift()];   /* bounded, never grows */
+  }
+  handle(m);
+}
+
+/* same-device fallbacks */
 var bc=null;
-try{ bc=new BroadcastChannel('kwpl3-'+ROOM); bc.onmessage=function(e){handle(e.data)} }catch(e){}
+try{ bc=new BroadcastChannel('kwpl3-'+ROOM); bc.onmessage=function(e){route(e.data)} }catch(e){}
 window.addEventListener('storage',function(e){
-  if(e.key==='kwpl3-'+ROOM && e.newValue){ try{handle(JSON.parse(e.newValue).m)}catch(err){} }
+  if(e.key==='kwpl3-'+ROOM && e.newValue){ try{route(JSON.parse(e.newValue).m)}catch(err){} }
 });
 
-var seen={};
 var net=MQTT(function(m){
-  if(m.id && seen[m.id]) return;
-  if(m.id){ seen[m.id]=1; setTimeout(function(){delete seen[m.id]},15000) }
-  if(m.a==='hb') return;
-  handle(m);
+  route(m);
 }, function(up){
   if(DEBUG) toast(up?'RELAY CONNECTED':'RELAY OFFLINE');
   /* on (re)connect, ask the controller to restore any always-on layers */
@@ -1306,6 +1397,16 @@ if(_q.get('debug')==='1'){
     }
     requestAnimationFrame(loop);
   })(performance.now());
+}
+
+/* ---- webfont safety ----
+   The first graphic of a match can be measured before Anton has loaded, which sizes it
+   against the fallback metrics. Re-fit whatever is on screen once the fonts settle. */
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(function(){
+    var el=$('burst');
+    if(el && !el.classList.contains('hide')) fitWord($('bWord'), el.classList.contains('mega'));
+  }).catch(function(){});
 }
 
 /* ============================================================
