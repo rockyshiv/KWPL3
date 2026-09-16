@@ -26,7 +26,7 @@ body{
 header{
   position:sticky;top:0;z-index:20;background:rgba(4,7,15,.96);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
-  padding:calc(10px + env(safe-area-inset-top)) 14px 10px;
+  padding:calc(7px + env(safe-area-inset-top)) 12px 8px;
 }
 .hrow{display:flex;align-items:center;gap:10px}
 .brand{font-weight:800;letter-spacing:.06em;font-size:15px;
@@ -38,35 +38,35 @@ header{
 .dot.warn{background:var(--am)}
 
 /* ---------- tabs ---------- */
-nav{display:flex;gap:6px;overflow-x:auto;margin-top:10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+nav{display:flex;gap:5px;overflow-x:auto;margin-top:8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 nav::-webkit-scrollbar{display:none}
 nav button{
   flex:none;background:var(--panel);color:var(--dim);border:1px solid var(--line);
-  border-radius:10px;padding:9px 13px;font-size:13px;font-weight:700;letter-spacing:.02em;
+  border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:700;letter-spacing:.02em;
   white-space:nowrap;cursor:pointer;transition:.15s
 }
 nav button.sel{background:linear-gradient(100deg,var(--or),var(--am));color:#08111f;border-color:transparent}
 
 /* ---------- layout ---------- */
-main{padding:14px 14px 40px;max-width:900px;margin:0 auto}
+main{padding:8px 10px 22px;max-width:900px;margin:0 auto}
 .pane{display:none}.pane.sel{display:block}
-h3{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:20px 0 9px;font-weight:800}
+h3{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:8px 0 3px;font-weight:800}
 h3:first-child{margin-top:2px}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(106px,1fr));gap:4px}
 .grid.two{grid-template-columns:1fr 1fr}
 
 /* ---------- buttons ---------- */
 .b{
   position:relative;border:1px solid var(--line);background:var(--panel);
-  color:var(--ink);border-radius:13px;padding:16px 12px;font-size:15px;font-weight:800;
+  color:var(--ink);border-radius:11px;padding:8px 5px;font-size:13px;font-weight:800;
   letter-spacing:.05em;text-transform:uppercase;cursor:pointer;text-align:center;
-  transition:transform .08s,filter .15s;min-height:60px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  transition:transform .08s,filter .15s;min-height:46px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.15;
 }
-.b small{font-size:10.5px;font-weight:600;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.b small{font-size:9.5px;font-weight:600;letter-spacing:.04em;color:var(--dim);text-transform:uppercase;line-height:1.1}
 .b:active{transform:scale(.955);filter:brightness(1.25)}
-.b.big{font-size:20px;min-height:82px}
+.b.big{font-size:18px;min-height:56px}
 .b.or{background:linear-gradient(140deg,#FF6A13,#FF9A2E);color:#0a0f1c;border-color:transparent}
 .b.or small{color:rgba(10,15,28,.72)}
 .b.rd{background:linear-gradient(140deg,#E01B24,#FF6A13);color:#fff;border-color:transparent}
@@ -86,41 +86,56 @@ h3:first-child{margin-top:2px}
 .b.tg{justify-content:center}
 .b.tg.on{background:linear-gradient(140deg,#0E9C5B,#12B76A);color:#fff;border-color:transparent}
 .b.tg.on small{color:rgba(255,255,255,.85)}
-.b.tg .st{font-size:10.5px;letter-spacing:.14em;color:var(--dim)}
+.b.tg .st{font-size:9.5px;letter-spacing:.1em;color:var(--dim)}
 .b.tg.on .st{color:rgba(255,255,255,.9)}
 
 /* ---------- fields ---------- */
-.f{margin-bottom:10px}
-.f label{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:5px;font-weight:800}
+.f{margin-bottom:7px}
+.minilbl{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim);margin:0 0 3px;font-weight:800}
+.f label{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:3px;font-weight:800}
 input,select,textarea{
   width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);
-  border-radius:11px;padding:13px 13px;font-size:16px;font-family:inherit;outline:none
+  border-radius:10px;padding:9px 11px;font-size:16px;font-family:inherit;outline:none
 }
 input:focus,select,textarea:focus{border-color:var(--or)}
-textarea{min-height:120px;resize:vertical;line-height:1.5}
+textarea{min-height:66px;resize:vertical;line-height:1.4}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
 @media(max-width:600px){.row2,.row3{grid-template-columns:1fr}}
 
 /* team picker */
-.teams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tb{border:2px solid var(--line);background:var(--panel);border-radius:12px;padding:12px 10px;
-  font-size:13.5px;font-weight:800;letter-spacing:.04em;color:var(--dim);cursor:pointer;text-align:center;
-  display:flex;align-items:center;justify-content:center;gap:8px;text-transform:uppercase}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tb{border:2px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 7px;min-height:44px;
+  font-size:12.5px;font-weight:800;letter-spacing:.04em;color:var(--dim);cursor:pointer;text-align:center;
+  display:flex;align-items:center;justify-content:center;gap:6px;text-transform:uppercase}
 .tb i{width:12px;height:12px;border-radius:3px;flex:none;display:block}
 .tb.sel{color:#fff;background:var(--panel2)}
 
-.note{font-size:12.5px;color:var(--dim);line-height:1.6;background:var(--panel);
-  border:1px solid var(--line);border-left:3px solid var(--or);border-radius:10px;padding:11px 13px;margin:12px 0}
+.note{font-size:11.5px;color:var(--dim);line-height:1.42;background:var(--panel);
+  border:1px solid var(--line);border-left:3px solid var(--or);border-radius:9px;padding:7px 10px;margin:8px 0}
 .note b{color:var(--ink)}
+/* Guidance that does not need a box. On the Live tab the boxed notes were
+   pushing the player tag off the bottom of a phone screen, which is the one
+   thing on that tab you reach for between deliveries. */
+.hint{font-size:10.5px;color:var(--dim);line-height:1.35;margin:4px 2px 0;letter-spacing:.01em}
+.hint b{color:#B9CCE8;font-weight:700}
+/* player tag: one row — name, team, clear */
+.tagbar{display:grid;grid-template-columns:1fr 118px 44px;gap:6px;align-items:stretch;margin-top:5px}
+/* 44px is the smallest reliable thumb target; the row is otherwise sized by the
+   input, which lands just under it */
+.tagbar>*{min-height:44px}
+.tagbar .b{padding:0;font-size:18px;border-radius:10px}
 code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;
   word-break:break-all;display:inline-block}
 
 /* panic bar */
-.panic{position:sticky;bottom:0;z-index:20;margin:20px -14px -40px;padding:12px 14px calc(14px + env(safe-area-inset-bottom));
+/* the negative margins must match main's padding exactly — they were still set
+   to the old 14px/40px, which pushed the bar 8px wider than the screen */
+.panic{position:sticky;bottom:0;z-index:20;margin:10px -10px -22px;padding:6px 10px calc(8px + env(safe-area-inset-bottom));
   background:rgba(4,7,15,.97);backdrop-filter:blur(10px);border-top:1px solid var(--line);
   display:flex;gap:9px}
-.panic .b{flex:1;min-height:52px;font-size:14px;padding:12px}
+.panic .b{flex:1;min-height:44px;font-size:13px;padding:8px}
 
 #flash{position:fixed;left:50%;bottom:96px;transform:translate(-50%,20px);z-index:60;
   background:rgba(18,183,106,.95);color:#022; font-weight:800;font-size:13px;letter-spacing:.08em;
@@ -141,6 +156,7 @@ code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1
     <button data-p="breaks">Breaks</button>
     <button data-p="teams">Teams</button>
     <button data-p="players">Players</button>
+    <button data-p="partners">Partners</button>
     <button data-p="furniture">On-screen</button>
     <button data-p="setup">Setup</button>
   </nav>
@@ -171,7 +187,7 @@ code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1
     <button class="b am big" data-fire='{"a":"burst","k":"duck"}'>Duck<small>Out for nought</small></button>
     <button class="b am big" data-fire='{"a":"burst","k":"goldenduck"}'>Golden duck<small>Out first ball</small></button>
   </div>
-  <div class="note">The duck waddles off with his bat for about six seconds. Set the player name below first and it appears on the graphic.</div>
+  <div class="hint">Waddles off with his bat, about six seconds. Tag the player first.</div>
 
   <h3>Decision review</h3>
   <div class="grid">
@@ -193,27 +209,24 @@ code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1
     <button class="b gn" data-fire='{"a":"burst","k":"freehit"}'>Free hit<small>No ball</small></button>
   </div>
 
-  <div class="note">
-    <b>Tag the player.</b> Fill these in and every graphic above shows the name and team strip until you clear them.
+  <h3>Tag the player</h3>
+  <div class="tagbar">
+    <input id="livePlayer" placeholder="Player name" autocomplete="off">
+    <select id="liveTeam">
+      <option value="">No team</option>
+      <option value="BEL">Belagavi</option>
+      <option value="BEN">Bengaluru</option>
+      <option value="BJP">Bijapur</option>
+      <option value="TUM">Tumkur</option>
+    </select>
+    <button class="b gh" title="Clear the player tag"
+      onclick="document.getElementById('livePlayer').value='';document.getElementById('liveTeam').value='';flash('Player tag cleared')">&times;</button>
   </div>
-  <div class="row2">
-    <div class="f"><label>Player name</label><input id="livePlayer" placeholder="e.g. Ravi Kumar" autocomplete="off"></div>
-    <div class="f"><label>Team</label>
-      <select id="liveTeam">
-        <option value="">— none —</option>
-        <option value="BEL">Belagavi Bulls</option>
-        <option value="BEN">Bengaluru Renegades</option>
-        <option value="BJP">Bijapur Blasters</option>
-        <option value="TUM">Tumkur Tigers</option>
-      </select>
-    </div>
-  </div>
-  <button class="b gh" onclick="document.getElementById('livePlayer').value='';document.getElementById('liveTeam').value='';flash('Player tag cleared')">Clear player tag</button>
 </section>
 
 <!-- ================= BREAKS ================= -->
 <section class="pane" id="p-breaks">
-  <div class="note">Break screens stay up until you press <b>Take break off</b>. Set minutes to show a countdown.</div>
+  <div class="hint">Break screens stay up until you press <b>Take break off</b>. Set minutes to show a countdown.</div>
   <div class="f"><label>Countdown minutes (0 = no clock)</label>
     <input id="brkMins" type="number" inputmode="decimal" value="5" min="0" step="1"></div>
 
@@ -235,7 +248,7 @@ code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1
   <div class="f"><label>Small note (optional)</label><input id="ckNote" placeholder="e.g. NEXT: BENGALURU vs BIJAPUR"></div>
   <button class="b or" id="ckGo">Show custom screen</button>
 
-  <div style="height:14px"></div>
+  <div style="height:7px"></div>
   <button class="b off" data-fire='{"a":"cardOff"}'>Take break off</button>
 </section>
 
@@ -244,15 +257,15 @@ code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1
   <h3>Match up</h3>
   <div class="row2">
     <div>
-      <div class="f"><label>Team A (left)</label></div>
+      <label class="minilbl">Team A (left)</label>
       <div class="teams" id="pickA"></div>
     </div>
     <div>
-      <div class="f"><label>Team B (right)</label></div>
+      <label class="minilbl">Team B (right)</label>
       <div class="teams" id="pickB"></div>
     </div>
   </div>
-  <div class="f" style="margin-top:12px"><label>Strap line</label><input id="vsStrapIn" value="KWPL SEASON 3 · MATCH 1"></div>
+  <div class="f" style="margin-top:7px"><label>Strap line</label><input id="vsStrapIn" value="KWPL SEASON 3 · MATCH 1"></div>
   <div class="f"><label>Venue line</label><input id="vsVenueIn" value="VET GROUND, JP NAGAR · BENGALURU"></div>
   <div class="grid two">
     <button class="b or big" id="vsGo">Show VS screen</button>
@@ -316,8 +329,44 @@ code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1
 </section>
 
 <!-- ================= FURNITURE ================= -->
+<!-- ================= PARTNERS ================= -->
+<section class="pane" id="p-partners">
+  <div class="hint">The full wall is best at the innings break or before the toss. The single tiers are
+  small enough to run mid-over without covering play.</div>
+
+  <h3>Full partner wall</h3>
+  <div class="f"><label>Hold for (seconds — 0 keeps it up until you take it off)</label>
+    <input id="pwSecs" type="number" inputmode="decimal" value="0" min="0" step="1"></div>
+  <button class="b am" id="pwGo">Show the whole wall</button>
+  <div style="height:8px"></div>
+  <button class="b off" data-fire='{"a":"pwallOff"}'>Take the wall off</button>
+
+  <h3>One tier at a time</h3>
+  <div class="f"><label>Hold each tier for (seconds)</label>
+    <input id="ptSecs" type="number" inputmode="decimal" value="6" min="2" max="120" step="1"></div>
+  <div class="grid two">
+    <button class="b am" data-tier="title">Title partners</button>
+    <button class="b or" data-tier="associate">Associate partners</button>
+    <button class="b cy" data-tier="jersey">Jersey partner</button>
+    <button class="b cy" data-tier="volunteer">Volunteering</button>
+    <button class="b pu" data-tier="trophy">Trophy partner</button>
+    <button class="b pu" data-tier="physio">Physio partner</button>
+    <button class="b gh" data-tier="hydration">Hydration partner</button>
+    <button class="b gh" data-tier="streaming">Streaming partner</button>
+    <button class="b gh" data-tier="photo">Photography</button>
+    <button class="b gh" data-tier="ngo">NGO partners</button>
+  </div>
+
+  <h3>Play through every tier</h3>
+  <div class="hint">Runs all ten in order, holding each for the time above, then clears itself.
+  Firing anything else stops it.</div>
+  <button class="b or" id="ptTour">Start the partner run</button>
+  <div style="height:8px"></div>
+  <button class="b off" data-fire='{"a":"ptierOff"}'>Stop / take strip off</button>
+</section>
+
 <section class="pane" id="p-furniture">
-  <div class="note">These stay on screen until you switch them off. Tap to toggle.</div>
+  <div class="hint">These stay on screen until you switch them off. Tap to toggle.</div>
 
   <h3>Always-on layers</h3>
   <div class="grid two">
@@ -329,6 +378,11 @@ code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1
   </div>
 
   <h3>Corner logos</h3>
+  <div class="f"><label>Title sponsor in the corner</label>
+    <select id="bugClavion">
+      <option value="1">Show "Presented by Clavion" (recommended)</option>
+      <option value="0">KWPL mark only</option>
+    </select></div>
   <div class="f"><label>Add a team crest (optional)</label>
     <select id="bugTeam">
       <option value="">KWPL + Auraclusive only</option>
@@ -438,7 +492,91 @@ $('roomGo').onclick=function(){
   location.search='?room='+encodeURIComponent(v);
 };
 
+/* ============================================================
+   MESSAGE AUTHENTICATION — HMAC-SHA256, pure JS
+   The relay is a public broker: anyone can reach the topic.
+   Authenticity comes from the signature, not from secrecy of the channel.
+   Pure JS (no crypto.subtle) so it works on any webview, sync, no await.
+   ============================================================ */
+var KSHA = (function(){
+  var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+         0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+         0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+         0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+         0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+         0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+         0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+         0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  function rr(x,n){return (x>>>n)|(x<<(32-n))}
+  /* bytes -> 32-byte digest */
+  function sha256(bytes){
+    var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    var l=bytes.length, bl=l*8;
+    var withPad=new Uint8Array((((l+8)>>6)+1)*64);
+    withPad.set(bytes); withPad[l]=0x80;
+    var dv=new DataView(withPad.buffer);
+    dv.setUint32(withPad.length-4, bl>>>0, false);
+    dv.setUint32(withPad.length-8, Math.floor(bl/4294967296), false);
+    var w=new Int32Array(64);
+    for(var off=0; off<withPad.length; off+=64){
+      for(var i=0;i<16;i++) w[i]=dv.getInt32(off+i*4,false);
+      for(i=16;i<64;i++){
+        var s0=rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3);
+        var s1=rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10);
+        w[i]=(w[i-16]+s0+w[i-7]+s1)|0;
+      }
+      var a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+      for(i=0;i<64;i++){
+        var S1=rr(e,6)^rr(e,11)^rr(e,25), ch=(e&f)^(~e&g);
+        var t1=(h+S1+ch+K[i]+w[i])|0;
+        var S0=rr(a,2)^rr(a,13)^rr(a,22), mj=(a&b)^(a&c)^(b&c);
+        var t2=(S0+mj)|0;
+        h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;
+      }
+      H[0]=(H[0]+a)|0;H[1]=(H[1]+b)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;
+      H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+    }
+    var out=new Uint8Array(32), o=new DataView(out.buffer);
+    for(i=0;i<8;i++) o.setInt32(i*4,H[i],false);
+    return out;
+  }
+  var te=new TextEncoder();
+  function hmac(keyBytes, msgBytes){
+    var k=keyBytes;
+    if(k.length>64) k=sha256(k);
+    var pad=new Uint8Array(64); pad.set(k);
+    var ipad=new Uint8Array(64), opad=new Uint8Array(64);
+    for(var i=0;i<64;i++){ ipad[i]=pad[i]^0x36; opad[i]=pad[i]^0x5c }
+    var inner=new Uint8Array(64+msgBytes.length);
+    inner.set(ipad); inner.set(msgBytes,64);
+    var ih=sha256(inner);
+    var outer=new Uint8Array(96);
+    outer.set(opad); outer.set(ih,64);
+    return sha256(outer);
+  }
+  function hex(b){var s='';for(var i=0;i<b.length;i++)s+=(b[i]<16?'0':'')+b[i].toString(16);return s}
+  return {
+    /* 16 hex chars = 64 bits: far beyond guessing for this purpose, keeps packets small */
+    sign:function(secret,msg){ return hex(hmac(te.encode(secret), te.encode(msg))).slice(0,16) },
+    hexDigest:function(s){ return hex(sha256(te.encode(s))) }
+  };
+})();
+/* constant-time-ish compare so a timing side-channel can't leak the signature */
+function sigEq(a,b){
+  a=String(a||''); b=String(b||'');
+  if(a.length!==b.length) return false;
+  var r=0; for(var i=0;i<a.length;i++) r|=a.charCodeAt(i)^b.charCodeAt(i);
+  return r===0;
+}
+
 /* ---------------- transport: MQTT 3.1.1 over WebSocket ---------------- */
+var SECRET=ROOM;                  /* the room code is the shared signing key */
+function wrap(obj){ var body=JSON.stringify(obj); return {b:body, s:KSHA.sign(SECRET,body)} }
+function unwrap(raw){
+  if(!raw||typeof raw.b!=='string'||typeof raw.s!=='string') return null;
+  if(!sigEq(raw.s, KSHA.sign(SECRET, raw.b))) return null;
+  try{ return JSON.parse(raw.b) }catch(e){ return null }
+}
 var BROKERS=[
   'wss://broker.emqx.io:8084/mqtt',
   'wss://broker.hivemq.com:8884/mqtt',
@@ -486,7 +624,7 @@ function connect(){
       } else if(type===3){
         var tl=(body[0]<<8)|body[1];
         try{
-          var m=JSON.parse(dec.decode(body.subarray(2+tl)));
+          var m=unwrap(JSON.parse(dec.decode(body.subarray(2+tl))));
           if(m&&m.a==='hb'&&m.from==='display'){lastHB=Date.now();setStat()}
           if(m&&m.a==='hello'&&m.from==='display'){lastHB=Date.now();setStat();restoreLayers()}
         }catch(e){}
@@ -499,14 +637,16 @@ connect();
 var CID = 'c'+Math.random().toString(36).slice(2,8), seq=0;
 function rawSend(obj){
   if(!obj.id) obj.id = CID+'-'+(++seq);
+  if(!obj.t)  obj.t  = Date.now();
+  var signed = wrap(obj);
   var sent=false;
   if(alive&&ws&&ws.readyState===1){
-    var t=mqttStr(TOPIC),p=enc.encode(JSON.stringify(obj)),body=t.slice();
+    var t=mqttStr(TOPIC),p=enc.encode(JSON.stringify(signed)),body=t.slice();
     for(var i=0;i<p.length;i++)body.push(p[i]);
     try{ws.send(pkt(0x30,body));sent=true}catch(e){}
   }
-  try{if(bc)bc.postMessage(obj)}catch(e){}
-  try{localStorage.setItem('kwpl3-'+ROOM,JSON.stringify({m:obj,t:Date.now()}))}catch(e){}
+  try{if(bc)bc.postMessage(signed)}catch(e){}
+  try{localStorage.setItem('kwpl3-'+ROOM,JSON.stringify({m:signed,t:Date.now()}))}catch(e){}
   if(!sent && obj.a!=='hb' && obj.a!=='hello') queueRetry(obj);
   return sent;
 }
@@ -525,7 +665,7 @@ setInterval(function(){
   out.forEach(function(p){
     if(now-p.t > 6000) return;                       /* too old to be useful */
     if(alive&&ws&&ws.readyState===1){
-      var t=mqttStr(TOPIC), b=enc.encode(JSON.stringify(p.m)), body=t.slice();
+      var t=mqttStr(TOPIC), b=enc.encode(JSON.stringify(wrap(p.m))), body=t.slice();
       for(var i=0;i<b.length;i++) body.push(b[i]);
       try{ ws.send(pkt(0x30,body)) }catch(e){}
     }
@@ -611,6 +751,19 @@ $('ckGo').onclick=function(){
   }},'Custom screen');
 };
 
+/* ---------------- partners ---------------- */
+document.querySelectorAll('[data-tier]').forEach(function(b){
+  b.onclick=function(){
+    send({a:'ptier',k:b.dataset.tier,d:{secs:parseFloat($('ptSecs').value||6)}}, b.textContent);
+  };
+});
+$('pwGo').onclick=function(){
+  send({a:'pwall',d:{secs:parseFloat($('pwSecs').value||0)}},'Partner wall');
+};
+$('ptTour').onclick=function(){
+  send({a:'ptour',d:{secs:parseFloat($('ptSecs').value||6)}},'Partner run');
+};
+
 /* ---------------- teams ---------------- */
 var TEAMS=[
   ['BEL','Belagavi Bulls','#C9962F'],
@@ -668,7 +821,7 @@ function toggle(btnId,build){
   };
   return {set:function(v){on=v}};
 }
-toggle('tgBug',     function(on){return {a:'bug',      d:{on:on?1:0, team:$('bugTeam').value}}});
+toggle('tgBug',     function(on){return {a:'bug',      d:{on:on?1:0, team:$('bugTeam').value, clavion:$('bugClavion').value}}});
 toggle('tgTitle',   function(on){return {a:'titlebar', d:{on:on?1:0, a:$('tbA').value, b:$('tbB').value, c:$('tbC').value}}});
 toggle('tgSponsor', function(on){return {a:'sponsor',  d:{on:on?1:0}}});
 toggle('tgTicker',  function(on){return {a:'ticker',   d:{on:on?1:0, tag:$('tkTag').value, text:$('tkText').value}}});
@@ -690,8 +843,11 @@ toggle('tgSocial',  function(on){return {a:'social',   d:{on:on?1:0, text:$('soc
 $('socTx').addEventListener('change',function(){
   if($('tgSocial').classList.contains('on')) rawSend({a:'social',d:{on:1,text:$('socTx').value}});
 });
-$('bugTeam').addEventListener('change',function(){
-  if($('tgBug').classList.contains('on')) rawSend({a:'bug',d:{on:1,team:$('bugTeam').value}});
+['bugTeam','bugClavion'].forEach(function(id){
+  $(id).addEventListener('change',function(){
+    if($('tgBug').classList.contains('on'))
+      rawSend({a:'bug',d:{on:1,team:$('bugTeam').value,clavion:$('bugClavion').value}});
+  });
 });
 
 $('pingBtn').onclick=function(){ send({a:'burst',k:'four',d:{sub:'CONNECTION TEST'}},'Test sent') };
