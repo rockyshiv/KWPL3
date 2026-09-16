@@ -565,18 +565,36 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 #sponsor .chipw img{max-height:54px;max-width:200px;display:block}
 
 /* ticker */
-#ticker{position:absolute;left:0;right:0;bottom:0;height:120px;z-index:18;transform:translateY(110%);
-  display:flex;align-items:stretch;background:rgba(6,12,28,.95)}
-#ticker.on{animation:spIn .7s cubic-bezier(.16,1,.3,1) forwards}
-#ticker.out{animation:spOut .5s cubic-bezier(.7,0,.84,0) forwards}
+/* One thin line, hard against the bottom of frame.
+
+   This deliberately sits OUTSIDE the title-safe box. The trade is understood:
+   an edge-anchored bar cannot be both thin and safe, because the gap from the
+   safe line to the bottom of frame is 54px on its own. This stream goes to
+   YouTube and Facebook, which show the whole frame, so nothing is lost. If a
+   clean feed is ever cut for a TV broadcast that overscans, add &safe=1 to the
+   overlay link: that lifts the strip back inside the lines without a rebuild. */
+#ticker{position:absolute;left:0;right:0;bottom:0;height:54px;z-index:18;
+  transform:translateY(120px);display:flex;align-items:stretch;overflow:hidden;
+  background:rgba(6,12,28,.95)}
+#ticker.on{animation:tkIn .7s cubic-bezier(.16,1,.3,1) forwards}
+#ticker.out{animation:tkOut .5s cubic-bezier(.7,0,.84,0) forwards}
+@keyframes tkIn{to{transform:translateY(0)}}
+@keyframes tkOut{from{transform:translateY(0)}to{transform:translateY(120px)}}
 #ticker .tag{background:linear-gradient(135deg,var(--orange),var(--amber));color:#08111f;font-weight:800;
-  font-size:32px;letter-spacing:.2em;display:flex;align-items:center;padding:0 34px 40px 100px;text-transform:uppercase;
+  font-size:23px;letter-spacing:.15em;display:flex;align-items:center;padding:0 24px 0 96px;text-transform:uppercase;
   clip-path:polygon(0 0,100% 0,calc(100% - 22px) 100%,0 100%)}
 #ticker .vp{flex:1;overflow:hidden;position:relative}
-#ticker .tr{position:absolute;white-space:nowrap;top:auto;bottom:62px;
-  font-size:38px;color:#fff;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+/* centred with `top`, never a CSS transform — the marquee writes translateX to
+   this element every frame and would wipe out a translateY */
+#ticker .tr{position:absolute;white-space:nowrap;top:11px;bottom:auto;
+  font-size:26px;color:#fff;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
   will-change:transform}
-#ticker .tr span{padding:0 60px;color:#dce9ff}
+#ticker .tr span{padding:0 44px;color:#dce9ff}
+/* ?safe=1 — puts the ticker back inside the title-safe box for a TV clean feed */
+body.tksafe #ticker{left:96px;right:96px;bottom:54px;height:62px;border-radius:12px;
+  box-shadow:0 14px 34px rgba(0,0,0,.5)}
+body.tksafe #ticker .tag{padding:0 24px 0 30px}
+body.tksafe #ticker .tr{top:15px}
 #ticker .tr span b{color:var(--amber);font-weight:800}
 
 /* social bug */
@@ -883,6 +901,10 @@ var _q=new URLSearchParams(location.search);
 var LOWFX=_q.get('fx')==='low';
 if(LOWFX) document.body.classList.add('lowfx');
 if(_q.get('debug')==='1') document.body.classList.add('dbg');
+/* the ticker sits hard against the bottom edge by default, which is outside the
+   title-safe box; ?safe=1 lifts it back inside for a TV clean feed */
+var TKSAFE = _q.get('safe')==='1';
+if(TKSAFE) document.body.classList.add('tksafe');
 
 var cv=$('fx'), cx=cv.getContext('2d',{alpha:true}), parts=[], raf=null;
 /* the confetti buffer runs at half resolution and is scaled back up by CSS —
@@ -1354,7 +1376,7 @@ function buildBug(d){
 }
 /* keep the bottom bars from sitting on top of each other */
 function layoutBottom(){
-  var base = persist.ticker ? 120 : 0;
+  var base = persist.ticker ? (TKSAFE?128:54) : 0;  /* must match #ticker in the CSS */
   var occupied = base + (persist.sponsor?150:0);
   $('sponsor').style.bottom = base+'px';
   $('social').style.bottom  = (occupied + 30)+'px';
@@ -1388,7 +1410,11 @@ function setTicker(text,tag){
   }).join('');
   tr.innerHTML=html+html;
   stopTicker();
-  var x=1920, w=tr.scrollWidth/2 || 1, spd=2.6;
+  /* Start already full rather than off the right edge. Beginning at the edge of
+     the window meant roughly ten seconds of empty strip after switching it on,
+     which reads as broken. The strip slides up on show, so arriving with text
+     in it is both faster and more like a real ticker. */
+  var x=0, w=tr.scrollWidth/2 || 1, spd=2.6;
   (function loop(){
     x-=spd; if(x <= -w) x += w;
     tr.style.transform='translateX(' + x + 'px)';
