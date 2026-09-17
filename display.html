@@ -483,10 +483,17 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 #xi .hd .crest img{width:100%;height:100%;object-fit:cover}
 #xi .hd h3{font-family:'Anton',Impact,sans-serif;font-size:86px;color:#fff;text-transform:uppercase;transform:skewX(-8deg)}
 #xi .hd p{font-size:34px;letter-spacing:.42em;color:var(--amber);font-weight:700;text-transform:uppercase;margin-top:6px}
-/* top:442 not 470, and tighter rows: eleven names plus the super sub strip has to
-   finish above the title-safe line at y1026, and the old spacing ran 27px past it */
-#xi .grid{position:absolute;left:50%;transform:translateX(-50%);top:442px;width:1380px;
-  display:grid;grid-template-columns:1fr 1fr;gap:12px 40px}
+/* The grid and the super sub strip live in ONE positioned container, in normal
+   flow. They used to be two absolutely-positioned boxes with the strip's top
+   computed from a measurement of the grid — which broke the moment the web font
+   finished loading: the rows grew taller, the strip stayed where it was put, and
+   the eleventh name ended up underneath it. Nothing is measured now, so the strip
+   simply cannot be stranded.
+   top:442 and the tight rows keep eleven names plus the strip above the
+   title-safe line at y1026. */
+#xi .body{position:absolute;left:50%;top:442px;width:1380px;transform:translateX(-50%);
+  transform-origin:top center}
+#xi .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 40px}
 #xi .grid li{list-style:none;display:flex;align-items:center;gap:18px;
   background:linear-gradient(100deg,rgba(255,255,255,.10),rgba(255,255,255,.03));
   border-left:5px solid var(--c1);padding:10px 24px;opacity:0;transform:translateX(-30px)}
@@ -496,7 +503,7 @@ body{font-family:'Barlow Condensed',Arial Narrow,Arial,sans-serif;-webkit-font-s
 #xi .grid li i{margin-left:auto;font-style:normal;font-size:26px;font-weight:800;letter-spacing:.1em;
   color:#08111f;background:linear-gradient(135deg,var(--c1),var(--c2));padding:4px 12px;border-radius:6px}
 /* the super sub, clearly not one of the eleven */
-#xi .ssub{position:absolute;left:50%;transform:translateX(-50%);width:1380px;
+#xi .ssub{margin-top:22px;
   display:flex;align-items:center;gap:24px;padding:10px 26px;opacity:0;
   background:linear-gradient(100deg,rgba(122,92,255,.30),rgba(49,199,245,.10));
   border-left:5px solid #7A5CFF}
@@ -746,8 +753,10 @@ body.dbg #fps{display:block}
       <h3 id="xiTeam">TEAM</h3>
       <p id="xiTitle">PLAYING XI</p>
     </div>
-    <ul class="grid" id="xiGrid"></ul>
-    <div class="ssub hide" id="xiSub"></div>
+    <div class="body" id="xiBody">
+      <ul class="grid" id="xiGrid"></ul>
+      <div class="ssub hide" id="xiSub"></div>
+    </div>
   </div>
 
   <!-- ============ DRS ============ -->
@@ -1338,6 +1347,28 @@ function playMOTM(d){
 }
 
 /* ---- PLAYING XI ---- */
+/* Scale the team sheet down only if it needs it. Eleven names fit comfortably;
+   fourteen plus a super sub ran past the title-safe line, and the free-text box
+   still accepts sixteen. The container holds the grid and the strip together, so
+   one measurement of one element is all this needs. */
+function fitXI(){
+  var body=$('xiBody'), TOP=442, SAFE=1026;
+  body.style.transform='translateX(-50%)';
+  var need=body.offsetHeight, room=SAFE-TOP;
+  var k=need>room ? room/need : 1;
+  body.style.transform='translateX(-50%) scale('+k.toFixed(4)+')';
+}
+/* Re-fit whenever the block's own height changes — a late web font is the common
+   cause, but anything that reflows the rows is covered. Safe from feedback:
+   fitXI only writes a transform, and offsetHeight ignores transforms, so the
+   observer cannot retrigger itself. */
+(function(){
+  if(typeof ResizeObserver!=='function') return;
+  var body=$('xiBody'); if(!body) return;
+  new ResizeObserver(function(){
+    if(!$('xi').classList.contains('hide')) fitXI();
+  }).observe(body);
+})();
 function playXI(d){
   d=d||{}; var el=$('xi'), T=TEAMS[d.team]||TEAMS.BEL;
   bump('xi');
@@ -1374,23 +1405,7 @@ function playXI(d){
   } else hide(sEl);
 
   el.classList.remove('out','on'); show(el);
-  /* Fit the block to the frame instead of trusting a row count. Eleven names fit
-     comfortably; fourteen plus a super sub ran 27px past the title-safe line, and
-     the free-text box still accepts up to sixteen. Measure what actually rendered,
-     then scale it down only if it needs it. Measured after show(), because a
-     hidden element measures zero. */
-  var g=$('xiGrid'), TOP=442, SAFE=1026, GAP=22;
-  g.style.transform=''; sEl.style.transform='';
-  var gh=g.offsetHeight, sh=sub?sEl.offsetHeight:0;
-  var need=gh+(sub?GAP+sh:0), room=SAFE-TOP;
-  var k=need>room ? room/need : 1;
-  g.style.transformOrigin='top center';
-  g.style.transform='translateX(-50%) scale('+k.toFixed(4)+')';
-  if(sub){
-    sEl.style.transformOrigin='top center';
-    sEl.style.transform='translateX(-50%) scale('+k.toFixed(4)+')';
-    sEl.style.top=(TOP+gh*k+GAP*k)+'px';
-  }
+  fitXI();   /* a ResizeObserver re-fits it if the rows change size later */
   void el.offsetWidth; el.classList.add('on');
 }
 
@@ -1802,17 +1817,34 @@ window.addEventListener('storage',function(e){
   }
 });
 
+/* Talk back on EVERY channel, not just the relay.
+   The controller has always sent on the relay AND the same-device channel, but the
+   display only answered on the relay. That made the fallback one-way: with both
+   pages open on one machine and no relay, the controller never saw a heartbeat and
+   sat on "relay ok, no display" forever — and never got the hello that asks it to
+   restore the always-on layers after a reload. */
+function announce(msg){
+  var signed = wrap(msg);
+  try{ net.send(signed) }catch(e){}
+  try{ if(bc) bc.postMessage(signed) }catch(e){}
+  try{ localStorage.setItem('kwpl3d-'+ROOM, JSON.stringify({m:signed, t:Date.now()})) }catch(e){}
+}
+function stamp(a,p){ return {a:a, from:'display', t:Date.now(), id:p+Math.random().toString(36).slice(2,9)} }
+
 var net=MQTT(function(raw){
   var m=unwrap(raw);
   if(m) route(m);
 }, function(up){
   if(DEBUG) toast(up?'RELAY CONNECTED':'RELAY OFFLINE');
   /* on (re)connect, ask the controller to restore any always-on layers */
-  if(up) setTimeout(function(){ net.send(wrap({a:'hello',from:'display',t:Date.now(),id:'h'+Math.random().toString(36).slice(2,9)})) }, 400);
+  if(up) setTimeout(function(){ announce(stamp('hello','h')) }, 400);
 });
 
+/* A hello on startup regardless of the relay, so the same-device path works too. */
+setTimeout(function(){ announce(stamp('hello','h')) }, 700);
+
 /* heartbeat so the controller can show "display online" */
-setInterval(function(){ net.send(wrap({a:'hb',from:'display',t:Date.now(),id:'b'+Math.random().toString(36).slice(2,9)})) },3000);
+setInterval(function(){ announce(stamp('hb','b')) },3000);
 
 /* ---- on-device fps meter (?debug=1) ---- */
 if(_q.get('debug')==='1'){

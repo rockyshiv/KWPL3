@@ -650,9 +650,13 @@ function connect(){
         var tl=(body[0]<<8)|body[1];
         try{
           var m=unwrap(JSON.parse(dec.decode(body.subarray(2+tl))));
-          if(m&&m.a==='hb'&&m.from==='display'){lastHB=Date.now();setStat()}
-          if(m&&m.a==='hello'&&m.from==='display'){lastHB=Date.now();setStat();restoreLayers()}
-        }catch(e){}
+          fromDisplay(m);
+        }catch(e){
+          /* Malformed traffic on a public relay is expected and ignored. A
+             ReferenceError is not: an empty catch here hid a call to a function
+             that was never written, so reconnect-restore silently did nothing. */
+          if(e instanceof ReferenceError || e instanceof TypeError) console.error('controller fault:', e);
+        }
       }
     }
   }
@@ -697,23 +701,62 @@ setInterval(function(){
   });
   if(out.length) flash('reconnected — resent');
 },1200);
-var bc=null; try{bc=new BroadcastChannel('kwpl3-'+ROOM)}catch(e){}
+var bc=null;
+try{
+  bc=new BroadcastChannel('kwpl3-'+ROOM);
+  /* the display answers on this channel now as well as the relay */
+  bc.onmessage=function(ev){ try{ fromDisplay(unwrap(ev.data)) }catch(e){} };
+}catch(e){}
+window.addEventListener('storage',function(ev){
+  if(ev.key!=='kwpl3d-'+ROOM || !ev.newValue) return;
+  try{ fromDisplay(unwrap(JSON.parse(ev.newValue).m)) }catch(e){}
+});
+/* one place that reacts to the display, whichever channel carried it */
+/* A hello arrives on up to three channels at once; act on each one only once.
+   Bounded, because a flaky connection means one hello per reconnect and this
+   runs for four days. */
+var helloSeen=Object.create(null), helloQ=[];
+function fromDisplay(m){
+  if(!m || m.from!=='display') return;
+  if(m.a==='hb'){ lastHB=Date.now(); setStat(); return }
+  if(m.a==='hello'){
+    if(m.id){
+      if(helloSeen[m.id]) return;
+      helloSeen[m.id]=1; helloQ.push(m.id);
+      if(helloQ.length>200) delete helloSeen[helloQ.shift()];
+    }
+    lastHB=Date.now(); setStat(); restoreLayers();
+  }
+}
 
 /* ---------------- status ---------------- */
 var lastHB=0;
+/* Report what is actually true, not just whether the relay is up.
+   This used to key everything off the relay, so with both pages open on one
+   laptop and the relay blocked it sat on "connecting…" while the overlay was
+   in fact responding on the same-device channel — the exact confusion that
+   made this look broken the first time. A live heartbeat is proof the display
+   is listening, whatever carried it. */
 function setStat(){
   var d=$('dot'),t=$('statTx'),n=$('connNote');
   var online=Date.now()-lastHB<9000;
-  if(alive&&online){d.className='dot ok';t.textContent='display live'}
-  else if(alive){d.className='dot warn';t.textContent='no display yet'}
-  else{d.className='dot';t.textContent='connecting…'}
-  if(n) n.innerHTML = alive
-    ? ('Relay connected via <b>'+brokerName+'</b> — your phone is fine.<br>'+
-       'Overlay display: <b>'+(online
-          ? 'online ✓'
-          : 'NOT RUNNING. Open display.html — on the YoloBox, or on a laptop to test — using room code <b>'+ROOM+'</b>.')+
-       '</b><br>Room code: <b>'+ROOM+'</b>')
-    : ('<b>Connecting to the relay…</b><br>If this does not clear, the phone has no internet, or this network blocks the relay. Try mobile data instead of wifi.<br>Room code: <b>'+ROOM+'</b>');
+  if(online){ d.className='dot ok'; t.textContent='display live' }
+  else if(alive){ d.className='dot warn'; t.textContent='no display yet' }
+  else{ d.className='dot'; t.textContent='connecting…' }
+  if(!n) return;
+  if(online && alive)
+    n.innerHTML='Relay connected via <b>'+brokerName+'</b>, overlay display <b>online ✓</b><br>Room code: <b>'+ROOM+'</b>';
+  else if(online)
+    n.innerHTML='Overlay display <b>online ✓</b> on this device, but the <b>relay is not connected</b>.<br>'+
+      'Fine for testing on one machine. At the ground the phone and the YoloBox are different devices, '+
+      'so the relay must connect or nothing will reach the overlay.<br>Room code: <b>'+ROOM+'</b>';
+  else if(alive)
+    n.innerHTML='Relay connected via <b>'+brokerName+'</b> — your phone is fine.<br>'+
+      'Overlay display: <b>NOT RUNNING. Open display.html — on the YoloBox, or on a laptop to test — '+
+      'using room code <b>'+ROOM+'</b>.</b><br>Room code: <b>'+ROOM+'</b>';
+  else
+    n.innerHTML='<b>Connecting to the relay…</b><br>If this does not clear, the phone has no internet, '+
+      'or this network blocks the relay. Try mobile data instead of wifi.<br>Room code: <b>'+ROOM+'</b>';
 }
 setInterval(setStat,2000); setStat();
 
@@ -897,8 +940,13 @@ $('mmGo').onclick=function(){
 };
 
 /* ---------------- persistent layers ---------------- */
+/* Every always-on toggle registers itself here so restoreLayers() can replay it.
+   Reusing each toggle's own build() means a restored layer carries exactly what
+   the button would have sent — no second copy of the payload to drift. */
+var LAYERS=[];
 function toggle(btnId,build){
   var b=$(btnId), on=false;
+  LAYERS.push({btn:b, build:build});
   b.onclick=function(){
     on=!on;
     b.classList.toggle('on',on);
@@ -906,6 +954,17 @@ function toggle(btnId,build){
     send(build(on), b.firstChild.textContent.trim()+(on?' on':' off'));
   };
   return {set:function(v){on=v}};
+}
+/* The display asks for this the moment it (re)connects — a YoloBox reload used to
+   drop the corner logos, ticker and sponsor bar until the operator noticed and
+   re-toggled them by hand. Staggered so the display is not hit with five signed
+   messages in the same tick. */
+function restoreLayers(){
+  var live=LAYERS.filter(function(l){ return l.btn.classList.contains('on') });
+  live.forEach(function(l,i){
+    setTimeout(function(){ rawSend(l.build(true)) }, 120*i);
+  });
+  if(live.length) flash('Restored '+live.length+' layer'+(live.length===1?'':'s'));
 }
 toggle('tgBug',     function(on){return {a:'bug',      d:{on:on?1:0, team:$('bugTeam').value, clavion:$('bugClavion').value}}});
 toggle('tgTitle',   function(on){return {a:'titlebar', d:{on:on?1:0, a:$('tbA').value, b:$('tbB').value, c:$('tbC').value}}});
