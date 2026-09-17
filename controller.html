@@ -91,12 +91,27 @@ h3:first-child{margin-top:2px}
 
 /* ---------- fields ---------- */
 .f{margin-bottom:7px}
+/* squad picker: tap to put a player in the eleven, tap again to take them out */
+.squad{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:4px 0 8px}
+.pl{position:relative;border:1px solid var(--line);background:var(--panel);color:var(--dim);
+  border-radius:9px;padding:8px 8px 8px 30px;font-size:12.5px;font-weight:700;text-align:left;
+  min-height:44px;display:flex;align-items:center;gap:6px;cursor:pointer;overflow:hidden;
+  font-family:inherit;letter-spacing:.01em}
+.pl.on{background:linear-gradient(140deg,#0E9C5B,#12B76A);color:#fff;border-color:transparent}
+.pl .no{position:absolute;left:7px;font-size:11px;font-weight:800;opacity:.9;font-variant-numeric:tabular-nums}
+.pl .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl .rl{margin-left:auto;font-size:9px;letter-spacing:.09em;opacity:.85;flex:none}
+.xicount{font-size:11px;letter-spacing:.1em;color:var(--dim);font-weight:800;text-transform:uppercase;
+  display:flex;justify-content:space-between;align-items:center;margin:2px 2px 0}
+.xicount b{color:var(--am)}
+.xicount.full b{color:var(--gn)}
 .minilbl{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
   color:var(--dim);margin:0 0 3px;font-weight:800}
 .f label{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:3px;font-weight:800}
 input,select,textarea{
   width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);
-  border-radius:10px;padding:9px 11px;font-size:16px;font-family:inherit;outline:none
+  border-radius:10px;padding:9px 11px;font-size:16px;font-family:inherit;outline:none;
+  min-height:44px  /* the same thumb-target floor the buttons use */
 }
 input:focus,select,textarea:focus{border-color:var(--or)}
 textarea{min-height:66px;resize:vertical;line-height:1.4}
@@ -207,6 +222,7 @@ code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1
     <button class="b or" data-fire='{"a":"burst","k":"lastover"}'>Last over<small>Final 6 balls</small></button>
     <button class="b rd" data-fire='{"a":"burst","k":"superover"}'>Super over<small>Eliminator</small></button>
     <button class="b gn" data-fire='{"a":"burst","k":"freehit"}'>Free hit<small>No ball</small></button>
+    <button class="b pu" data-fire='{"a":"burst","k":"supersub"}'>Super sub<small>Enters the game</small></button>
   </div>
 
   <h3>Tag the player</h3>
@@ -281,12 +297,21 @@ code{background:#0A1120;border:1px solid var(--line);border-radius:5px;padding:1
       <option value="TUM">Tumkur Tigers</option>
     </select></div>
   <div class="f"><label>Heading</label><input id="xiTitleIn" value="PLAYING XI"></div>
-  <div class="f"><label>Players — one per line</label>
-    <textarea id="xiList" placeholder="Manjunath B (C)&#10;Rakesh S&#10;Vinay Kumar&#10;…"></textarea></div>
+  <div class="xicount"><span>Tap to pick the eleven</span><span><b id="xiN">0</b> / 11</span></div>
+  <div class="squad" id="xiSquad"></div>
+  <div class="row2">
+    <div class="f"><label>Super sub <span id="xiSubNote" style="font-weight:600;letter-spacing:0;text-transform:none;opacity:.7"></span></label>
+      <select id="xiSubSel"><option value="">— none —</option></select></div>
+    <div class="f"><label>Not in the squad? Add a name</label>
+      <input id="xiExtra" placeholder="Type and press enter" autocomplete="off"></div>
+  </div>
   <div class="grid two">
-    <button class="b or" id="xiGo">Show squad</button>
+    <button class="b or" id="xiGo">Show team sheet</button>
     <button class="b off" data-fire='{"a":"xiOff"}'>Take off</button>
   </div>
+  <div style="height:7px"></div>
+  <button class="b gh" id="xiClear">Clear the eleven</button>
+
 </section>
 
 <!-- ================= PLAYERS ================= -->
@@ -792,11 +817,72 @@ autoTitle();
 $('vsGo').onclick=function(){
   send({a:'vs',d:{a:selA,b:selB,strap:$('vsStrapIn').value,venue:$('vsVenueIn').value}},'VS screen');
 };
+/* ---------------- squad picker ---------------- */
+/* Commands carry NAMES, never positions in this list: if the overlay is ever a
+   version behind this file, a name still lands on the right player. */
+var SQUADS = {"TUM":[["Shiv"],["Vishal"],["Ajit Padasalagi","C"],["Umesh Kalmani"],["Sagar Lamani","VC"],["Santu"],["B.D.Vijay"],["Gangadhar"],["Yallappa"],["Venkatesh N"],["Uday"],["Honnesh Gowda"],["Amudha Deepak"]],"BEN":[["SAGAR","C"],["N B HAAREESH KUMAR"],["B MAREPPA"],["ASHOKA"],["BASSU DHONI"],["SUNIL C V"],["ABRAHAM"],["BHARATESH"],["PREMAKAVI"],["RAKESH KUMAR"],["JOTIBA MAHADEV"],["KUMAR CHAVAN"],["SYED ASADULLA"]],"BEL":[["ALTAF PASHA"],["BHARAMAPPA"],["Husen k"],["Nagendra K"],["Gajju"],["SHASHI CHAITHRA","VC"],["Khaleel","C"],["Sandeep"],["Yatheesha H"],["naik"],["Sanna veeresh"],["Nagaraj Revankar"],["Abraar"],["PRAVEEN ANGADI"]],"BJP":[["Umar Manna"],["Praveen Kalla","VC"],["Huligesha"],["RAM"],["Abhi"],["Mallikarjun","C"],["CM CHAITAN"],["David"],["Chandru LH"],["Tharun"],["Indra"],["Santhosh TP"],["Proddatur Subhash"],["Hanumantha HB"]]};
+var xiExtras = {};                      /* names typed in that are not in the sheet */
+var xiPick = [];                        /* the eleven, in the order they were tapped */
+
+function squadOf(t){
+  return (SQUADS[t]||[]).concat(xiExtras[t]||[]);
+}
+function renderSquad(){
+  var t=$('xiTeamSel').value, list=squadOf(t);
+  $('xiSquad').innerHTML = list.map(function(p){
+    var n=p[0], role=p[1]||'', i=xiPick.indexOf(n);
+    return '<button class="pl'+(i>=0?' on':'')+'" data-n="'+n.replace(/"/g,'&quot;')+'">'+
+           '<span class="no">'+(i>=0?(i+1):'')+'</span>'+
+           '<span class="nm">'+n+'</span>'+
+           (role?'<span class="rl">'+role+'</span>':'')+'</button>';
+  }).join('');
+  var n=xiPick.length;
+  $('xiN').textContent=n;
+  $('xiSquad').parentNode.querySelector('.xicount').classList.toggle('full', n===11);
+  /* The super sub is the twelfth player, not one of the eleven. Only offer who is
+     left: with the whole squad listed it was possible to pick someone already in
+     the XI, and they then appeared twice on the team sheet. */
+  var sel=$('xiSubSel'), keep=sel.value;
+  var spare=list.filter(function(p){ return xiPick.indexOf(p[0])<0 });
+  sel.innerHTML='<option value="">— none —</option>'+
+    spare.map(function(p){return '<option>'+p[0]+'</option>'}).join('');
+  /* if the current pick has since been tapped into the eleven, drop it */
+  sel.value = (keep && xiPick.indexOf(keep)<0) ? keep : '';
+  $('xiSubNote').textContent = spare.length
+    ? (spare.length+' player'+(spare.length===1?'':'s')+' left over')
+    : 'everyone is in the eleven';
+}
+$('xiSquad').addEventListener('click',function(ev){
+  var b=ev.target.closest('.pl'); if(!b) return;
+  var n=b.dataset.n, i=xiPick.indexOf(n);
+  if(i>=0) xiPick.splice(i,1);
+  else if(xiPick.length>=11) { flash('That is eleven already — tap one to remove it',1); return }
+  else xiPick.push(n);
+  var stolen = ($('xiSubSel').value===n && xiPick.indexOf(n)>=0);
+  renderSquad();
+  if(stolen) flash(n+' is in the eleven now — pick another super sub',1);
+});
+$('xiTeamSel').addEventListener('change',function(){ xiPick=[]; renderSquad() });
+$('xiClear').onclick=function(){ xiPick=[]; renderSquad(); flash('Eleven cleared') };
+$('xiExtra').addEventListener('keydown',function(ev){
+  if(ev.key!=='Enter') return;
+  var v=this.value.trim(); if(!v) return;
+  var t=$('xiTeamSel').value;
+  (xiExtras[t]=xiExtras[t]||[]).push([v,'']);
+  this.value=''; renderSquad(); flash('Added '+v);
+});
+renderSquad();
+
 $('xiGo').onclick=function(){
-  var list=$('xiList').value.trim();
-  if(!list){flash('Add some player names first',1);return}
-  send({a:'xi',d:{team:$('xiTeamSel').value,title:$('xiTitleIn').value,list:list}},'Squad');
+  if(!xiPick.length){flash('Tap some players first',1);return}
+  if(xiPick.length<11 && !confirm('Only '+xiPick.length+' picked. Show it anyway?')) return;
+  var t=$('xiTeamSel').value, list=squadOf(t);
+  var roleOf=function(n){ for(var i=0;i<list.length;i++) if(list[i][0]===n) return list[i][1]||''; return '' };
+  send({a:'xi',d:{team:t,title:$('xiTitleIn').value,
+    players:xiPick.map(function(n){return {n:n,t:roleOf(n)}}),
+    sub:$('xiSubSel').value?{n:$('xiSubSel').value}:null}},'Team sheet');
 };
+
 
 /* ---------------- players ---------------- */
 $('l3Go').onclick=function(){
